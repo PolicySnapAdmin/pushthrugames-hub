@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260728id" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='46' fill='%23ff4d6d'/><text y='.9em' x='50%' text-anchor='middle' font-size='55'>👆</text></svg>" />
 </head>
 <body>
@@ -26,41 +26,85 @@
       <h1>Push Thru Games</h1>
       <p class="lede">
         Free browser games. No install required.
-        Pick a title — more coming.
+        Each title has its own vibe — pick one and play.
       </p>
     </header>
 
     <main class="catalog" aria-label="Games">
-      <article class="card card-live">
-        <div class="card-top">
-          <span class="badge">Live</span>
-          <h2>Push Thru</h2>
+      <!-- Push Thru — coral / pulse -->
+      <article class="card game-card game-pushthru">
+        <div class="game-card-bg" aria-hidden="true">
+          <svg class="game-logo game-logo-push" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="60" cy="60" r="52" stroke="currentColor" stroke-width="3" opacity="0.35"/>
+            <circle cx="60" cy="60" r="38" fill="currentColor" opacity="0.18"/>
+            <circle cx="60" cy="60" r="28" fill="currentColor" opacity="0.45"/>
+            <path d="M60 42v36M48 54l12-12 12 12" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+            <circle cx="60" cy="60" r="58" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.25"/>
+          </svg>
         </div>
-        <p>
-          Unlimited taps, 10-second challenges, levels, friends &amp; groups.
-          How many can you push?
-        </p>
-        <a class="play-btn" href="https://www.pushthrugame.com/">Play Push Thru →</a>
-        <p class="card-meta">
-          <a href="https://www.pushthrugame.com/store.html">Store</a>
-          ·
-          <a href="https://www.pushthrugame.com/privacy.html">Privacy</a>
-        </p>
+        <div class="game-card-content">
+          <div class="card-top">
+            <span class="badge badge-push">Live</span>
+            <span class="game-kicker">Tap · climb · compete</span>
+          </div>
+          <h2>Push Thru</h2>
+          <p>
+            Unlimited taps, 10-second challenges, levels, friends &amp; groups.
+            How many can you push?
+          </p>
+          <a class="play-btn play-btn-push" href="https://www.pushthrugame.com/">Play Push Thru →</a>
+          <p class="card-meta">
+            <a href="https://www.pushthrugame.com/store.html">Store</a>
+            ·
+            <a href="https://www.pushthrugame.com/privacy.html">Privacy</a>
+            ·
+            <span class="domain-tag">pushthrugame.com</span>
+          </p>
+        </div>
       </article>
 
-      <article class="card card-live">
-        <div class="card-top">
-          <span class="badge">Live</span>
-          <h2>QR</h2>
+      <!-- QR — mint / lattice -->
+      <article class="card game-card game-qr">
+        <div class="game-card-bg" aria-hidden="true">
+          <svg class="game-logo game-logo-qr" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="14" y="14" width="92" height="92" rx="6" stroke="currentColor" stroke-width="3" opacity="0.4"/>
+            <!-- finder patterns -->
+            <rect x="22" y="22" width="28" height="28" fill="currentColor" opacity="0.55"/>
+            <rect x="28" y="28" width="16" height="16" fill="#0a0a0c"/>
+            <rect x="32" y="32" width="8" height="8" fill="currentColor"/>
+            <rect x="70" y="22" width="28" height="28" fill="currentColor" opacity="0.55"/>
+            <rect x="76" y="28" width="16" height="16" fill="#0a0a0c"/>
+            <rect x="80" y="32" width="8" height="8" fill="currentColor"/>
+            <rect x="22" y="70" width="28" height="28" fill="currentColor" opacity="0.55"/>
+            <rect x="28" y="76" width="16" height="16" fill="#0a0a0c"/>
+            <rect x="32" y="80" width="8" height="8" fill="currentColor"/>
+            <!-- modules -->
+            <rect x="58" y="58" width="10" height="10" fill="currentColor" opacity="0.9"/>
+            <rect x="72" y="58" width="10" height="10" fill="currentColor" opacity="0.5"/>
+            <rect x="58" y="72" width="10" height="10" fill="currentColor" opacity="0.5"/>
+            <rect x="86" y="72" width="10" height="10" fill="currentColor" opacity="0.75"/>
+            <rect x="72" y="86" width="10" height="10" fill="currentColor" opacity="0.6"/>
+            <rect x="58" y="42" width="6" height="6" fill="currentColor" opacity="0.4"/>
+            <rect x="42" y="58" width="6" height="6" fill="currentColor" opacity="0.4"/>
+          </svg>
         </div>
-        <p>
-          You are a QR code. Unknown modules. Random runs.
-          Decode ??? into Memory / RAM — bosses every 3 &amp; 10 sectors.
-        </p>
-        <a class="play-btn" href="/qr/">Play QR →</a>
-        <p class="card-meta">
-          <a href="/qr/">pushthrugames.com/qr</a>
-        </p>
+        <div class="game-card-content">
+          <div class="card-top">
+            <span class="badge badge-qr">Live</span>
+            <span class="game-kicker">Explore · decode · survive</span>
+          </div>
+          <h2>QR</h2>
+          <p>
+            You are a QR code. Unknown modules. Random runs.
+            Decode ??? into Memory / RAM — bosses every 3 &amp; 10 sectors.
+          </p>
+          <a class="play-btn play-btn-qr" href="/qr/">Play QR →</a>
+          <p class="card-meta">
+            <a href="/qr/">Open game</a>
+            ·
+            <span class="domain-tag">pushthrugames.com/qr</span>
+          </p>
+        </div>
       </article>
     </main>
 

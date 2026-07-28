@@ -7,6 +7,13 @@
   --btn: #ff4d6d;
   --btn-text: #fff;
   --glow: color-mix(in srgb, var(--btn) 45%, transparent);
+  /* Game identities */
+  --push: #ff4d6d;
+  --push-deep: #c2183a;
+  --push-soft: #ff8fa3;
+  --qr: #7cffb2;
+  --qr-deep: #1a9e6a;
+  --qr-soft: #b8ffe0;
   font-family: "DM Sans", system-ui, sans-serif;
   color: var(--text);
   background: var(--bg);
@@ -20,8 +27,8 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(900px 480px at 50% -10%, color-mix(in srgb, var(--btn) 16%, transparent), transparent 60%),
-    radial-gradient(700px 360px at 100% 100%, color-mix(in srgb, #7c9cff 12%, transparent), transparent 50%),
+    radial-gradient(900px 480px at 20% -10%, color-mix(in srgb, var(--push) 14%, transparent), transparent 55%),
+    radial-gradient(800px 420px at 90% 100%, color-mix(in srgb, var(--qr) 10%, transparent), transparent 50%),
     var(--bg);
 }
 
@@ -54,7 +61,7 @@ h1 {
 
 .lede {
   margin: 0;
-  max-width: 36ch;
+  max-width: 40ch;
   color: var(--muted);
   line-height: 1.5;
   font-size: 1.05rem;
@@ -62,23 +69,45 @@ h1 {
 
 .catalog {
   display: grid;
-  gap: 16px;
+  gap: 20px;
 }
 
+/* ── Shared game card shell ─────────────────────────────────────────────── */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px 20px 18px;
+  border-radius: 18px;
+  padding: 0;
+  overflow: hidden;
 }
 
-.card-live {
-  border-color: color-mix(in srgb, var(--btn) 40%, var(--border));
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--btn) 15%, transparent), 0 12px 40px rgba(0, 0, 0, 0.25);
+.game-card {
+  position: relative;
+  isolation: isolate;
+  min-height: 200px;
 }
 
-.card-soon {
-  opacity: 0.78;
+.game-card-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.game-logo {
+  position: absolute;
+  width: min(220px, 55vw);
+  height: min(220px, 55vw);
+  right: -24px;
+  bottom: -28px;
+  opacity: 0.9;
+}
+
+.game-card-content {
+  position: relative;
+  z-index: 1;
+  padding: 22px 20px 20px;
 }
 
 .card-top {
@@ -86,13 +115,30 @@ h1 {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+}
+
+.game-kicker {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .card h2 {
-  margin: 0;
+  margin: 0 0 10px;
   font-family: "Space Grotesk", system-ui, sans-serif;
-  font-size: 1.35rem;
+  font-size: 1.55rem;
+  letter-spacing: -0.02em;
+}
+
+.card p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 0.95rem;
+  max-width: 36ch;
 }
 
 .badge {
@@ -102,22 +148,7 @@ h1 {
   text-transform: uppercase;
   padding: 4px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--btn) 22%, transparent);
-  color: #ffc1cc;
-  border: 1px solid color-mix(in srgb, var(--btn) 40%, transparent);
-}
-
-.badge-soon {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--muted);
-  border-color: var(--border);
-}
-
-.card p {
-  margin: 0 0 16px;
-  color: var(--muted);
-  line-height: 1.5;
-  font-size: 0.95rem;
+  border: 1px solid transparent;
 }
 
 .play-btn {
@@ -126,12 +157,10 @@ h1 {
   justify-content: center;
   padding: 12px 18px;
   border-radius: 999px;
-  background: linear-gradient(135deg, color-mix(in srgb, #fff 12%, var(--btn)), var(--btn));
-  color: var(--btn-text);
+  color: #fff;
   font-weight: 700;
   text-decoration: none;
-  box-shadow: 0 0 18px var(--glow);
-  transition: filter 0.15s, transform 0.08s;
+  transition: filter 0.15s, transform 0.08s, box-shadow 0.15s;
 }
 
 .play-btn:hover {
@@ -142,17 +171,10 @@ h1 {
   transform: scale(0.98);
 }
 
-.play-btn-disabled {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--muted);
-  box-shadow: none;
-  cursor: default;
-  pointer-events: none;
-}
-
 .card-meta {
   margin: 14px 0 0 !important;
   font-size: 0.85rem !important;
+  max-width: none !important;
 }
 
 .card-meta a {
@@ -165,6 +187,145 @@ h1 {
   text-decoration: underline;
 }
 
+.domain-tag {
+  opacity: 0.75;
+  font-size: 0.8em;
+}
+
+/* ── Push Thru identity (coral / pulse) ─────────────────────────────────── */
+.game-pushthru {
+  --accent: var(--push);
+  border-color: color-mix(in srgb, var(--push) 55%, var(--border));
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--push) 18%, #1a1014) 0%,
+      #141018 48%,
+      #121016 100%
+    );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--push) 20%, transparent),
+    0 16px 48px rgba(255, 77, 109, 0.12),
+    0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.game-pushthru .game-card-bg {
+  background:
+    radial-gradient(ellipse 80% 70% at 100% 100%, color-mix(in srgb, var(--push) 28%, transparent), transparent 60%),
+    radial-gradient(circle at 12% 20%, color-mix(in srgb, var(--push) 12%, transparent), transparent 40%);
+}
+
+.game-pushthru .game-logo {
+  color: var(--push);
+  filter: drop-shadow(0 0 24px color-mix(in srgb, var(--push) 45%, transparent));
+}
+
+.game-pushthru h2 {
+  color: #ffe4ea;
+  text-shadow: 0 0 28px color-mix(in srgb, var(--push) 40%, transparent);
+}
+
+.game-pushthru .game-kicker {
+  color: color-mix(in srgb, var(--push-soft) 80%, var(--muted));
+}
+
+.badge-push {
+  background: color-mix(in srgb, var(--push) 22%, transparent);
+  color: #ffc1cc;
+  border-color: color-mix(in srgb, var(--push) 45%, transparent);
+}
+
+.play-btn-push {
+  background: linear-gradient(135deg, color-mix(in srgb, #fff 14%, var(--push)), var(--push-deep));
+  box-shadow: 0 0 20px color-mix(in srgb, var(--push) 50%, transparent);
+}
+
+.game-pushthru .card-meta a:hover {
+  color: var(--push-soft);
+}
+
+/* ── QR identity (mint / lattice) ───────────────────────────────────────── */
+.game-qr {
+  --accent: var(--qr);
+  border-color: color-mix(in srgb, var(--qr) 45%, var(--border));
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--qr) 12%, #0c1410) 0%,
+      #0e1214 50%,
+      #0c1012 100%
+    );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--qr) 18%, transparent),
+    0 16px 48px rgba(124, 255, 178, 0.1),
+    0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+.game-qr .game-card-bg {
+  background:
+    radial-gradient(ellipse 85% 75% at 100% 100%, color-mix(in srgb, var(--qr) 22%, transparent), transparent 62%),
+    radial-gradient(circle at 8% 18%, color-mix(in srgb, var(--qr) 8%, transparent), transparent 42%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 11px,
+      color-mix(in srgb, var(--qr) 4%, transparent) 11px,
+      color-mix(in srgb, var(--qr) 4%, transparent) 12px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 11px,
+      color-mix(in srgb, var(--qr) 4%, transparent) 11px,
+      color-mix(in srgb, var(--qr) 4%, transparent) 12px
+    );
+}
+
+.game-qr .game-logo {
+  color: var(--qr);
+  filter: drop-shadow(0 0 20px color-mix(in srgb, var(--qr) 40%, transparent));
+  opacity: 0.85;
+}
+
+.game-qr h2 {
+  font-family: "Space Grotesk", "IBM Plex Mono", monospace;
+  letter-spacing: 0.12em;
+  color: var(--qr-soft);
+  text-shadow: 0 0 28px color-mix(in srgb, var(--qr) 45%, transparent);
+}
+
+.game-qr .game-kicker {
+  color: color-mix(in srgb, var(--qr) 70%, var(--muted));
+  font-family: "IBM Plex Mono", "DM Sans", monospace;
+  letter-spacing: 0.1em;
+}
+
+.game-qr p {
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+.badge-qr {
+  background: color-mix(in srgb, var(--qr) 16%, transparent);
+  color: var(--qr-soft);
+  border-color: color-mix(in srgb, var(--qr) 40%, transparent);
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.play-btn-qr {
+  background: linear-gradient(135deg, color-mix(in srgb, #fff 10%, var(--qr)), var(--qr-deep));
+  color: #04140c;
+  box-shadow: 0 0 20px color-mix(in srgb, var(--qr) 45%, transparent);
+}
+
+.game-qr .card-meta a {
+  color: color-mix(in srgb, var(--qr) 55%, #c5c5d4);
+}
+
+.game-qr .card-meta a:hover {
+  color: var(--qr-soft);
+}
+
+/* ── Footer ─────────────────────────────────────────────────────────────── */
 .foot {
   margin-top: 40px;
   padding-top: 20px;
@@ -181,4 +342,26 @@ h1 {
 
 .foot a {
   color: #c5c5d4;
+}
+
+.foot a:hover {
+  color: var(--text);
+}
+
+@media (min-width: 640px) {
+  .catalog {
+    gap: 22px;
+  }
+
+  .game-logo {
+    width: 240px;
+    height: 240px;
+    right: -20px;
+    bottom: -32px;
+  }
+
+  .game-card-content {
+    padding: 26px 24px 22px;
+    max-width: 72%;
+  }
 }
