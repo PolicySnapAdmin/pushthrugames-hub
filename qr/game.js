@@ -1209,20 +1209,22 @@
       return;
     }
     const myCode = o.api.profile?.friend_code;
+    const meIsEmail = !!(o.api.session?.user && !o.api.session.user.is_anonymous && o.api.session.user.email);
     const label = SCORE_LABELS[scoresMetric] || "Score";
-    els.scoresMsg.textContent = `${res.rows.length} players · ${label}`;
+    els.scoresMsg.textContent = `${res.rows.length} email accounts · ${label} (guests hidden)`;
     els.scoresList.innerHTML = res.rows
       .map((r) => {
-        const you = myCode && r.friend_code === myCode;
+        const you = meIsEmail && myCode && r.friend_code === myCode;
         return `<li class="${you ? "you" : ""}">
           <span class="rank">#${esc(String(r.rank ?? ""))}</span>
-          <span class="name">${esc(r.display_name || "Signal")}<span class="meta">${esc(r.friend_code || "")}${you ? " · you" : ""}</span></span>
+          <span class="name">${esc(r.display_name || "Player")}<span class="meta">${esc(r.friend_code || "")}${you ? " · you" : ""}</span></span>
           <span class="score">${esc(String(r.score ?? 0))}</span>
         </li>`;
       })
       .join("");
     if (!res.rows.length) {
-      els.scoresMsg.textContent = "No ranked players yet — play a run and check back.";
+      els.scoresMsg.textContent =
+        "No email accounts ranked yet. Create a free account (not guest) to appear on high scores.";
     }
   }
 

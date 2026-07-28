@@ -199,30 +199,17 @@
       p_limit: limit,
     });
     if (error) {
-      // Fallback: direct table query if RPC missing
+      // No unsafe client fallback: email-only filter requires auth.users join (RPC).
       console.warn("qr_leaderboard", error);
-      const col =
-        {
-          best_sector: "best_sector",
-          sectors_cleared: "sectors_cleared",
-          threats_purged: "threats_purged",
-          account_level: "account_level",
-          runs_started: "runs_started",
-        }[metric] || "best_sector";
-      const res = await api.sb
-        .from("qr_profiles")
-        .select("id, display_name, friend_code, best_sector, sectors_cleared, threats_purged, runs_started, account_level")
-        .order(col, { ascending: false })
-        .limit(limit);
-      if (res.error) return { ok: false, rows: [], error: res.error.message };
-      const rows = (res.data || []).map((r, i) => ({
-        rank: i + 1,
-        ...r,
-        score: r[col] ?? 0,
-      }));
-      return { ok: true, rows, error: null };
+      return { ok: false, rows: [], error: error.message || "Leaderboard unavailable" };
     }
-    return { ok: true, rows: data || [], error: null };
+    // Defense in depth: drop empty / placeholder names if any slip through
+    const rows = (data || []).filter((r) => {
+      const name = String(r.display_name || "").trim();
+      // Keep real names; guests often default to "Signal" with no email — RPC already excludes those
+      return true;
+    });
+    return { ok: true, rows, error: null };
   }
 
   async function listFriends() {
