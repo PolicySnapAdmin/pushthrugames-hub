@@ -456,6 +456,10 @@
       title: "Maze style",
       body: "This sector’s layout type (rooms, corridors, arena, etc.).\nExplore carefully — soft walls, ice, and hazards may appear as you climb.",
     },
+    integrity: {
+      title: "Integrity scan",
+      body: "Press R (or Pause → Integrity scan) to check if this sector can be solved.\nIf generation sealed you in with hard walls, you get a free skip to the next sector.",
+    },
   };
 
   function getHelpForKey(key) {
@@ -487,6 +491,10 @@
     if (!state.running || state.dead) return;
     if (state.paused) return;
     if (els.overlay && !els.overlay.hidden) return;
+    if (key === "integrity") {
+      integrityScan();
+      return;
+    }
     const help = getHelpForKey(key);
     if (!help) return;
     // Overlay open freezes gameplay via isBusyUi()
@@ -999,6 +1007,7 @@
     if (state.bossKind === "major") chips.push(chipBtn("MAJOR BOSS", "majorboss", { warn: true }));
     if (state.exitOpen) chips.push(chipBtn("EXIT", "exit"));
     if (state.mazeName) chips.push(chipBtn(esc(state.mazeName), "maze"));
+    chips.push(chipBtn("SCAN", "integrity", { title: "Integrity scan (R) — free skip if impossible" }));
 
     els.powerBar.innerHTML = chips.join("");
   }
@@ -1406,6 +1415,11 @@
     if (action === "scores") return setPauseView("scores");
     if (action === "friends") return setPauseView("friends");
     if (action === "account") return setPauseView("account");
+    if (action === "integrity") {
+      closePause(false);
+      integrityScan();
+      return;
+    }
     if (action === "save") {
       const ok = saveGame(true);
       showPauseToast(ok ? "Game saved." : "Save failed.");
@@ -1464,8 +1478,215 @@
     }
   }
 
+  /** Tiles a default player can walk without tools (no B / phase). Soft = blocked. */
+  function isOpenTile(t) {
+    return t === "floor" || t === "spawn" || t === "exit" || t === "ice" || t === "hazard";
+  }
+
+  /** Soft counts as passable (with B or phase). Hard wall never. */
+  function isSoftPassableTile(t) {
+    return isOpenTile(t) || t === "soft";
+  }
+
+  function pathKey(x, y) {
+    return y * COLS + x;
+  }
+
+  /**
+   * BFS path. softOk=true treats soft walls as walkable.
+   * Returns array of {x,y} including start/end, or null.
+   */
+  function findPath(sx, sy, tx, ty, softOk) {
+    if (!inBounds(sx, sy) || !inBounds(tx, ty)) return null;
+    const pass = softOk ? isSoftPassableTile : isOpenTile;
+    if (!pass(state.grid[sy][sx]) || !pass(state.grid[ty][tx])) return null;
+    const q = [{ x: sx, y: sy }];
+    const prev = new Map();
+    prev.set(pathKey(sx, sy), null);
+    const dirs = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ];
+    let head = 0;
+    while (head < q.length) {
+      const cur = q[head++];
+      if (cur.x === tx && cur.y === ty) {
+        const path = [];
+        let k = pathKey(tx, ty);
+        while (k != null) {
+          const y = Math.floor(k / COLS);
+          const x = k % COLS;
+          path.push({ x, y });
+          k = prev.get(k);
+          if (k === undefined) break;
+        }
+        path.reverse();
+        return path;
+      }
+      for (const [dx, dy] of dirs) {
+        const nx = cur.x + dx;
+        const ny = cur.y + dy;
+        if (!inBounds(nx, ny)) continue;
+        const nk = pathKey(nx, ny);
+        if (prev.has(nk)) continue;
+        if (!pass(state.grid[ny][nx])) continue;
+        prev.set(nk, pathKey(cur.x, cur.y));
+        q.push({ x: nx, y: ny });
+      }
+    }
+    return null;
+  }
+
+  function canReachExit(softOk) {
+    const mid = Math.floor(ROWS / 2);
+    return !!findPath(2, mid, COLS - 3, mid, softOk);
+  }
+
+  /** Carve a guaranteed floor highway from spawn to exit (L-shape / row). */
+  function forceOpenCorridor() {
+    const mid = Math.floor(ROWS / 2);
+    // 3-wide horizontal spine so hard blocks can't seal the mid row
+    for (let y = mid - 1; y <= mid + 1; y++) {
+      for (let x = 1; x < COLS - 1; x++) {
+        if (y <= 0 || y >= ROWS - 1) continue;
+        state.grid[y][x] = "floor";
+      }
+    }
+    carveRect(1, mid - 2, 5, mid + 2, "floor");
+    carveRect(COLS - 6, mid - 2, COLS - 2, mid + 2, "floor");
+    state.grid[mid][2] = "spawn";
+    state.grid[mid][COLS - 3] = "exit";
+    // Clear hazards on spine
+    state.hazards = (state.hazards || []).filter((h) => Math.abs(h.y - mid) > 1);
+  }
+
+  /**
+   * Guarantee spawn→exit is solvable with NO tools (hard walls never seal the run).
+   * Soft walls on a required path become floor so players aren't soft-locked without B.
+   */
+  function ensureSolvableLayout() {
+    const mid = Math.floor(ROWS / 2);
+    const sx = 2;
+    const sy = mid;
+    const tx = COLS - 3;
+    const ty = mid;
+
+    // Always stamp spawn/exit rooms
+    carveRect(1, mid - 2, 5, mid + 2, "floor");
+    carveRect(COLS - 6, mid - 2, COLS - 2, mid + 2, "floor");
+    state.grid[sy][sx] = "spawn";
+    state.grid[ty][tx] = "exit";
+
+    // If not even soft-passable, force a corridor
+    if (!findPath(sx, sy, tx, ty, true)) {
+      forceOpenCorridor();
+    }
+
+    // If hard-only path missing, open softs along a soft path (or force corridor)
+    let hardPath = findPath(sx, sy, tx, ty, false);
+    if (!hardPath) {
+      const softPath = findPath(sx, sy, tx, ty, true);
+      if (softPath) {
+        for (const c of softPath) {
+          if (state.grid[c.y][c.x] === "soft" || state.grid[c.y][c.x] === "wall") {
+            state.grid[c.y][c.x] = "floor";
+          }
+        }
+        state.grid[sy][sx] = "spawn";
+        state.grid[ty][tx] = "exit";
+      } else {
+        forceOpenCorridor();
+      }
+      hardPath = findPath(sx, sy, tx, ty, false);
+    }
+
+    if (!hardPath) {
+      forceOpenCorridor();
+      hardPath = findPath(sx, sy, tx, ty, false);
+    }
+
+    // Never leave solid wall on the main spine mid-row
+    for (let x = 1; x < COLS - 1; x++) {
+      if (state.grid[mid][x] === "wall") state.grid[mid][x] = "floor";
+    }
+    state.grid[sy][sx] = "spawn";
+    state.grid[ty][tx] = "exit";
+
+    return !!findPath(sx, sy, tx, ty, false);
+  }
+
+  /**
+   * Runtime check: can player reach exit with current kit?
+   * - phaseSoft / enough breaks treat soft as open
+   * - hard walls always block
+   */
+  function canPlayerReachExit() {
+    const p = state.player;
+    if (!p) return false;
+    const softOk = !!(p.phaseSoft || (p.breaks || 0) > 0 || (p.bombs || 0) > 0);
+    // Even with tools, need soft path at minimum; with tools softOk true
+    // Without tools, hard-open path required
+    const mid = Math.floor(ROWS / 2);
+    const fromX = p.x;
+    const fromY = p.y;
+    const toX = COLS - 3;
+    const toY = mid;
+    if (findPath(fromX, fromY, toX, toY, false)) return true;
+    if (softOk && findPath(fromX, fromY, toX, toY, true)) return true;
+    // Exit cell itself
+    return false;
+  }
+
+  function freeSkipBrokenSector(reason) {
+    if (state.awaitingNext || state.dead) return;
+    state.awaitingNext = true;
+    const next = state.level + 1;
+    showOverlay(
+      "INTEGRITY SCAN",
+      "Broken sector detected",
+      `${reason || "This layout cannot be solved."}\n\nProtocol failsafe: free advance to sector ${next}. No penalty.`,
+      () => {
+        trackSectorClear(state.level);
+        state.level = next;
+        state.bestLevel = Math.max(state.bestLevel, state.level);
+        if (state.player) state.player.hp = Math.min(state.player.maxHp, state.player.hp + 2);
+        syncProgress({ sectorsClearedDelta: 1 });
+        buildLevel(state.level);
+      }
+    );
+  }
+
+  function integrityScan() {
+    if (!state.running || state.dead || state.awaitingNext) return;
+    if (isBusyUi() && !(els.overlay && !els.overlay.hidden)) {
+      // allow from pause? user asked in-game - from pause close first
+    }
+    // Prefer checking map integrity spawn→exit hard path (generation bug)
+    const mapOk = canReachExit(false);
+    const playerOk = canPlayerReachExit();
+    if (!mapOk) {
+      closePause(false);
+      freeSkipBrokenSector("Hard walls seal the path to the exit beacon (generation fault).");
+      return;
+    }
+    if (!playerOk) {
+      // Might be soft-locked by soft walls with 0 breaks — still failsafe
+      closePause(false);
+      freeSkipBrokenSector("No route to the exit with your current tools (soft-lock).");
+      return;
+    }
+    showOverlay(
+      "INTEGRITY SCAN",
+      "Sector is solvable",
+      "A path to the exit beacon exists.\nClear hostiles to open the exit, then walk east onto the beacon.\n\nSoft (cracked) walls need B · hard walls never block a valid seed."
+    );
+    if (els.overlayOk) els.overlayOk.textContent = "Got it · unfreeze";
+  }
+
   function buildMaze(level, rand) {
-    // Start solid soft/hard mix then carve
+    // Start solid then carve
     state.grid = Array.from({ length: ROWS }, (_, y) =>
       Array.from({ length: COLS }, (_, x) => (x === 0 || y === 0 || x === COLS - 1 || y === ROWS - 1 ? "wall" : "wall"))
     );
@@ -1473,10 +1694,11 @@
     const styles = ["rooms", "corridors", "scatter", "arena", "braid", "islands"];
     const style = styles[Math.floor(rand() * styles.length)];
     state.mazeName = style.toUpperCase();
+    const mid = Math.floor(ROWS / 2);
 
     if (style === "rooms") {
       const rooms = 5 + Math.floor(rand() * 4) + Math.min(4, Math.floor(level / 5));
-      const centers = [];
+      const centers = [{ x: 4, y: mid }, { x: COLS - 5, y: mid }];
       for (let i = 0; i < rooms; i++) {
         const w = 3 + Math.floor(rand() * 5);
         const h = 3 + Math.floor(rand() * 4);
@@ -1485,7 +1707,6 @@
         carveRect(x, y, x + w, y + h, "floor");
         centers.push({ x: x + Math.floor(w / 2), y: y + Math.floor(h / 2) });
       }
-      // Connect rooms
       for (let i = 1; i < centers.length; i++) {
         const a = centers[i - 1];
         const b = centers[i];
@@ -1501,82 +1722,85 @@
         }
       }
     } else if (style === "corridors") {
-      // Horizontal + vertical highways
       for (let y = 2; y < ROWS - 2; y += 2 + Math.floor(rand() * 2)) {
         for (let x = 1; x < COLS - 1; x++) state.grid[y][x] = "floor";
       }
       for (let x = 2; x < COLS - 2; x += 3 + Math.floor(rand() * 2)) {
         for (let y = 1; y < ROWS - 1; y++) state.grid[y][x] = "floor";
       }
+      // Always include mid spine
+      for (let x = 1; x < COLS - 1; x++) state.grid[mid][x] = "floor";
     } else if (style === "scatter") {
       for (let y = 1; y < ROWS - 1; y++) {
         for (let x = 1; x < COLS - 1; x++) {
-          if (rand() > 0.38) state.grid[y][x] = "floor";
+          if (rand() > 0.32) state.grid[y][x] = "floor"; // denser floors than before
         }
       }
-      // Ensure connectivity flood from spawn pocket
-      carveRect(1, Math.floor(ROWS / 2) - 2, 6, Math.floor(ROWS / 2) + 2, "floor");
+      carveRect(1, mid - 2, 6, mid + 2, "floor");
     } else if (style === "arena") {
       carveRect(2, 2, COLS - 3, ROWS - 3, "floor");
-      // Pillars
-      for (let i = 0; i < 8 + level; i++) {
+      for (let i = 0; i < 6 + Math.floor(level / 2); i++) {
         const x = 4 + Math.floor(rand() * (COLS - 8));
         const y = 3 + Math.floor(rand() * (ROWS - 6));
-        state.grid[y][x] = rand() > 0.5 ? "wall" : "soft";
+        if (Math.abs(y - mid) <= 1) continue; // never seal spine
+        // Prefer soft pillars over hard walls
+        state.grid[y][x] = rand() > 0.25 ? "soft" : "wall";
       }
     } else if (style === "braid") {
       for (let y = 1; y < ROWS - 1; y++) {
         for (let x = 1; x < COLS - 1; x++) {
-          if ((x + y) % 2 === 0 || rand() > 0.55) state.grid[y][x] = "floor";
+          if ((x + y) % 2 === 0 || rand() > 0.45) state.grid[y][x] = "floor";
         }
       }
+      for (let x = 1; x < COLS - 1; x++) state.grid[mid][x] = "floor";
     } else if (style === "islands") {
       carveRect(1, 1, COLS - 2, ROWS - 2, "floor");
-      for (let i = 0; i < 12 + level; i++) {
+      for (let i = 0; i < 8 + Math.floor(level / 2); i++) {
         const x = 3 + Math.floor(rand() * (COLS - 6));
         const y = 2 + Math.floor(rand() * (ROWS - 4));
-        const s = 1 + Math.floor(rand() * 3);
-        carveRect(x, y, x + s, y + s, rand() > 0.4 ? "soft" : "wall");
+        if (Math.abs(y - mid) <= 1) continue;
+        const s = 1 + Math.floor(rand() * 2);
+        // Soft islands only — hard blocks caused soft-locks
+        carveRect(x, y, x + s, y + s, "soft");
       }
     }
 
-    // Soft wall sprinkle scales with level
-    const softChance = Math.min(0.2, 0.04 + level * 0.01);
+    // Soft sprinkle — never on mid spine
+    const softChance = Math.min(0.14, 0.03 + level * 0.008);
     for (let y = 2; y < ROWS - 2; y++) {
       for (let x = 2; x < COLS - 2; x++) {
+        if (Math.abs(y - mid) <= 1) continue;
         if (state.grid[y][x] === "floor" && rand() < softChance) state.grid[y][x] = "soft";
       }
     }
 
-    // Ice patches (higher levels)
     if (level >= 3) {
       for (let i = 0; i < 3 + Math.floor(level / 4); i++) {
         const x = 3 + Math.floor(rand() * (COLS - 6));
         const y = 2 + Math.floor(rand() * (ROWS - 4));
+        if (Math.abs(y - mid) <= 1) continue;
         if (state.grid[y][x] === "floor") state.grid[y][x] = "ice";
       }
     }
 
-    // Hazards
     state.hazards = [];
     if (level >= 2) {
-      const n = Math.min(10, 1 + Math.floor(level / 2));
-      const floors = floorTiles();
+      const n = Math.min(8, 1 + Math.floor(level / 2));
+      const floors = floorTiles().filter((c) => Math.abs(c.y - mid) > 1 && c.x > 8);
       shuffle(floors, rand);
       for (let i = 0; i < n && i < floors.length; i++) {
         const c = floors[i];
-        if (c.x < 8) continue;
         state.hazards.push({ x: c.x, y: c.y, dmg: 1 + Math.floor(level / 8), cd: 0 });
         state.grid[c.y][c.x] = "hazard";
       }
     }
 
-    // Spawn + exit
-    const mid = Math.floor(ROWS / 2);
+    // Spawn + exit rooms then enforce solvability
     carveRect(1, mid - 2, 5, mid + 2, "floor");
     state.grid[mid][2] = "spawn";
     carveRect(COLS - 6, mid - 2, COLS - 2, mid + 2, "floor");
     state.grid[mid][COLS - 3] = "exit";
+    ensureSolvableLayout();
   }
 
   function makeEnemy(kind, x, y, level, rand) {
@@ -1678,7 +1902,6 @@
   }
 
   function buildLevel(level) {
-    const rand = rng((state.runSeed || 1) * 10007 + level * 9973);
     state.bossKind = isBossLevel(level);
     state.exitOpen = false;
     state.enemies = [];
@@ -1691,7 +1914,25 @@
     state.dead = false;
     state.threatsKilledThisLevel = 0;
 
-    buildMaze(level, rand);
+    // Retry generation until spawn→exit is hard-walkable (no tool required)
+    let solved = false;
+    let lastStyle = "";
+    for (let attempt = 0; attempt < 14; attempt++) {
+      const rand = rng((state.runSeed || 1) * 10007 + level * 9973 + attempt * 7919);
+      buildMaze(level, rand);
+      lastStyle = state.mazeName;
+      if (ensureSolvableLayout() && canReachExit(false)) {
+        solved = true;
+        break;
+      }
+    }
+    if (!solved) {
+      const rand = rng((state.runSeed || 1) + level);
+      buildMaze(level, rand);
+      forceOpenCorridor();
+      state.mazeName = (lastStyle || "SAFE") + "+FIX";
+      ensureSolvableLayout();
+    }
 
     const mid = Math.floor(ROWS / 2);
     state.player.x = 2;
@@ -1748,6 +1989,17 @@
 
     log(`Sector ${level} · ${state.mazeName}${state.bossKind ? " · " + state.bossKind.toUpperCase() + " BOSS" : ""}`, true);
 
+    // Last-line failsafe if generation still sealed (should be rare)
+    if (!canReachExit(false)) {
+      log("Integrity: broken seed — free skip armed.", true);
+      // Defer skip so player sees message; auto-fire next tick
+      setTimeout(() => {
+        if (state.running && !state.dead && state.level === level && !canReachExit(false)) {
+          freeSkipBrokenSector("Generator could not open a hard path to the exit.");
+        }
+      }, 80);
+    }
+
     if (state.bossKind === "mini") {
       showOverlay("ALERT", "Mini-boss sector", "A Hardened Reader patrols the east. Modules are random — decode ??? into RAM.");
     } else if (state.bossKind === "major") {
@@ -1756,7 +2008,7 @@
       showOverlay(
         "BOOT",
         "First sector",
-        "WASD move · Space/E scan · F bolt · C join · G bomb · B rupture · Esc menu.\n\nUnknown modules are ??? until Memory write."
+        "WASD move · Space/E scan · F bolt · C join · G bomb · B rupture · R integrity scan · Esc menu.\n\nUnknown modules are ??? until Memory write.\nIf a sector is sealed by hard walls, Integrity scan free-skips it."
       );
     }
 
@@ -2869,6 +3121,10 @@
       e.preventDefault();
       tryDecoy();
     }
+    if (k === "r" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      integrityScan();
+    }
   });
   window.addEventListener("keyup", (e) => state.keys.delete(e.key.toLowerCase()));
 
@@ -3027,6 +3283,7 @@
         <li><kbd>C</kbd> — Join-Us convert</li>
         <li><kbd>G</kbd> — drop bomb · <kbd>V</kbd> decoy</li>
         <li><kbd>B</kbd> — rupture soft wall</li>
+        <li><kbd>R</kbd> — integrity scan (free skip if sealed)</li>
         <li><kbd>Esc</kbd> — pause / Memory / save</li>
         <li>Modules on floor may <strong>move</strong>. ??? until RAM decode.</li>`;
     }
@@ -3034,7 +3291,7 @@
 
   const titleHint = document.querySelector(".title-inner .hint");
   if (titleHint) {
-    titleHint.textContent = "WASD · Space scan · F bolt · C join · G bomb · Esc pause · random modules";
+    titleHint.textContent = "WASD · Space scan · F bolt · R integrity · Esc pause";
   }
 
   loadMemory();

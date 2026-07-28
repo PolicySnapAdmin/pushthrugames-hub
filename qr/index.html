@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260729social" />
+  <link rel="stylesheet" href="styles.css?v=20260729path" />
   <link rel="canonical" href="https://www.pushthrugames.com/qr/" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23000'/><rect x='2' y='2' width='10' height='10' fill='%23fff'/><rect x='4' y='4' width='6' height='6' fill='%23000'/><rect x='20' y='2' width='10' height='10' fill='%23fff'/><rect x='22' y='4' width='6' height='6' fill='%23000'/><rect x='2' y='20' width='10' height='10' fill='%23fff'/><rect x='4' y='22' width='6' height='6' fill='%23000'/><rect x='14' y='14' width='4' height='4' fill='%23fff'/></svg>" />
 </head>
@@ -118,6 +118,7 @@
             <button type="button" class="pause-btn" data-pause-action="save">Save game</button>
             <button type="button" class="pause-btn" data-pause-action="load">Load game</button>
             <button type="button" class="pause-btn" data-pause-action="status">This run status</button>
+            <button type="button" class="pause-btn" data-pause-action="integrity">⊘ Integrity scan</button>
 
             <p class="menu-section">Social &amp; ranks</p>
             <button type="button" class="pause-btn" data-pause-action="scores">🏆 High scores</button>
@@ -184,6 +185,7 @@
             <li><kbd>Space</kbd> / <kbd>E</kbd> — scan / sword</li>
             <li><kbd>F</kbd> — bolt · <kbd>C</kbd> Join-Us · <kbd>G</kbd> bomb · <kbd>V</kbd> decoy</li>
             <li><kbd>B</kbd> — rupture soft wall</li>
+            <li><kbd>R</kbd> — integrity scan (free skip if impossible)</li>
             <li><kbd>Esc</kbd> — pause / back / close</li>
           </ul>
         </div>
@@ -280,9 +282,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20260729emailboard"></script>
-  <script src="online.js?v=20260729emailboard"></script>
-  <script src="game.js?v=20260729emailboard"></script>
+  <script src="config.js?v=20260729path"></script>
+  <script src="online.js?v=20260729path"></script>
+  <script src="game.js?v=20260729path"></script>
   <script src="legal-consent.js?v=1" defer></script>
 </body>
 </html>
