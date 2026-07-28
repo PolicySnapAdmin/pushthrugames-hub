@@ -44,6 +44,8 @@
       powerups: document.getElementById("pause-view-powerups"),
       status: document.getElementById("pause-view-status"),
       stats: document.getElementById("pause-view-stats"),
+      scores: document.getElementById("pause-view-scores"),
+      friends: document.getElementById("pause-view-friends"),
       account: document.getElementById("pause-view-account"),
     },
     pausePowerupsBody: document.getElementById("pause-powerups-body"),
@@ -51,6 +53,14 @@
     pauseStatsBody: document.getElementById("pause-stats-body"),
     statsLevelCard: document.getElementById("stats-level-card"),
     pauseAccountBody: document.getElementById("pause-account-body"),
+    scoresTabs: document.getElementById("scores-tabs"),
+    scoresMsg: document.getElementById("scores-msg"),
+    scoresList: document.getElementById("scores-list"),
+    friendsMsg: document.getElementById("friends-msg"),
+    friendsList: document.getElementById("friends-list"),
+    friendsMyCode: document.getElementById("friends-my-code"),
+    friendCodeInput: document.getElementById("friend-code-input"),
+    friendAddBtn: document.getElementById("friend-add-btn"),
     accountName: document.getElementById("account-name"),
     accountEmail: document.getElementById("account-email"),
     accountPass: document.getElementById("account-pass"),
@@ -61,6 +71,8 @@
     accountSignout: document.getElementById("account-signout"),
     titleMeta: document.getElementById("title-meta"),
     btnStatsTitle: document.getElementById("btn-stats-title"),
+    btnScoresTitle: document.getElementById("btn-scores-title"),
+    btnFriendsTitle: document.getElementById("btn-friends-title"),
     welcomeName: document.getElementById("welcome-name"),
     welcomeEmail: document.getElementById("welcome-email"),
     welcomePass: document.getElementById("welcome-pass"),
@@ -70,6 +82,8 @@
     welcomePlay: document.getElementById("welcome-play"),
     welcomeGuest: document.getElementById("welcome-guest"),
   };
+
+  let scoresMetric = "best_sector";
 
   const WELCOME_SKIP_KEY = "qr-welcome-skip-v1";
 
@@ -1140,10 +1154,140 @@
       els.pauseHeading.textContent = "Lifetime & Account";
       els.pauseSub.textContent = "Progress that survives every wipe";
       renderStatsPage();
+    } else if (view === "scores") {
+      els.pauseHeading.textContent = "High scores";
+      els.pauseSub.textContent = "Global ranks · cloud";
+      renderScoresBoard();
+    } else if (view === "friends") {
+      els.pauseHeading.textContent = "Friends";
+      els.pauseSub.textContent = "Add by player code · compare ranks";
+      renderFriendsBoard();
     } else if (view === "account") {
       els.pauseHeading.textContent = "Account";
       els.pauseSub.textContent = "QR cloud · qr_* only";
       renderPauseAccount();
+    }
+  }
+
+  const SCORE_LABELS = {
+    best_sector: "Best sector",
+    account_level: "Account LV",
+    threats_purged: "Threats purged",
+    sectors_cleared: "Sectors cleared",
+    runs_started: "Runs started",
+  };
+
+  async function renderScoresBoard() {
+    if (!els.scoresList || !els.scoresMsg) return;
+    els.scoresTabs?.querySelectorAll(".board-tab").forEach((t) => {
+      t.classList.toggle("active", t.dataset.metric === scoresMetric);
+    });
+    const o = online();
+    if (!o?.api?.online) {
+      els.scoresMsg.textContent = "Sign in (Account) to load global high scores.";
+      els.scoresList.innerHTML = "";
+      return;
+    }
+    // Push latest meta so ranks reflect this device
+    try {
+      await o.reportProgress({
+        bestSector: Math.max(state.meta.bestSectorEver || 1, state.bestLevel || 1, state.level || 1),
+      });
+      await o.reportMeta?.({
+        accountLevel: state.meta.accountLevel,
+        accountXp: state.meta.accountXp,
+        bestSector: state.meta.bestSectorEver,
+        stats: state.meta,
+      });
+    } catch (_) {}
+
+    els.scoresMsg.textContent = `Loading ${SCORE_LABELS[scoresMetric] || scoresMetric}…`;
+    els.scoresList.innerHTML = "";
+    const res = await o.fetchLeaderboard(scoresMetric, 30);
+    if (!res.ok) {
+      els.scoresMsg.textContent = res.error || "Could not load board.";
+      return;
+    }
+    const myCode = o.api.profile?.friend_code;
+    const label = SCORE_LABELS[scoresMetric] || "Score";
+    els.scoresMsg.textContent = `${res.rows.length} players · ${label}`;
+    els.scoresList.innerHTML = res.rows
+      .map((r) => {
+        const you = myCode && r.friend_code === myCode;
+        return `<li class="${you ? "you" : ""}">
+          <span class="rank">#${esc(String(r.rank ?? ""))}</span>
+          <span class="name">${esc(r.display_name || "Signal")}<span class="meta">${esc(r.friend_code || "")}${you ? " · you" : ""}</span></span>
+          <span class="score">${esc(String(r.score ?? 0))}</span>
+        </li>`;
+      })
+      .join("");
+    if (!res.rows.length) {
+      els.scoresMsg.textContent = "No ranked players yet — play a run and check back.";
+    }
+  }
+
+  async function renderFriendsBoard() {
+    if (!els.friendsList || !els.friendsMsg) return;
+    const o = online();
+    const prof = o?.api?.profile;
+    if (els.friendsMyCode) {
+      els.friendsMyCode.innerHTML = prof?.friend_code
+        ? `Your code: <strong>${esc(prof.friend_code)}</strong> · share so others can add you`
+        : "Sign in to get a friend code.";
+    }
+    if (!o?.api?.online) {
+      els.friendsMsg.textContent = "Sign in under Account (guest is fine) to add friends.";
+      els.friendsList.innerHTML = "";
+      return;
+    }
+    els.friendsMsg.textContent = "Loading friends…";
+    els.friendsList.innerHTML = "";
+    const res = await o.listFriends();
+    if (!res.ok) {
+      els.friendsMsg.textContent = res.error || "Could not load friends.";
+      return;
+    }
+    if (!res.rows.length) {
+      els.friendsMsg.textContent = "No friends yet. Enter a 6-character code above.";
+      return;
+    }
+    els.friendsMsg.textContent = `${res.rows.length} friend${res.rows.length === 1 ? "" : "s"}`;
+    els.friendsList.innerHTML = res.rows
+      .map((f) => {
+        return `<li class="board-row" data-friend-id="${esc(f.id)}">
+          <span class="name">${esc(f.display_name || "Signal")}
+            <span class="meta">${esc(f.friend_code || "")} · LV ${esc(String(f.account_level ?? 1))} · best ${esc(String(f.best_sector ?? 1))}</span>
+            <span class="meta">Threats ${esc(String(f.threats_purged ?? 0))} · sectors ${esc(String(f.sectors_cleared ?? 0))} · runs ${esc(String(f.runs_started ?? 0))}</span>
+          </span>
+          <span class="friend-actions">
+            <button type="button" class="tiny-btn danger" data-friend-remove="${esc(f.id)}">Remove</button>
+          </span>
+        </li>`;
+      })
+      .join("");
+  }
+
+  async function addFriendFromUi() {
+    const o = online();
+    const code = (els.friendCodeInput?.value || "").trim();
+    if (!o?.api?.online) {
+      if (els.friendsMsg) els.friendsMsg.textContent = "Sign in first.";
+      return;
+    }
+    if (!code) {
+      if (els.friendsMsg) els.friendsMsg.textContent = "Enter a friend code.";
+      return;
+    }
+    try {
+      if (els.friendsMsg) els.friendsMsg.textContent = "Adding…";
+      const other = await o.addFriendByCode(code);
+      if (els.friendCodeInput) els.friendCodeInput.value = "";
+      if (els.friendsMsg) {
+        els.friendsMsg.textContent = `Added ${other?.display_name || "player"} (${other?.friend_code || code}).`;
+      }
+      await renderFriendsBoard();
+    } catch (e) {
+      if (els.friendsMsg) els.friendsMsg.textContent = e.message || "Could not add friend.";
     }
   }
 
@@ -1257,6 +1401,8 @@
     if (action === "powerups") return setPauseView("powerups");
     if (action === "status") return setPauseView("status");
     if (action === "stats") return setPauseView("stats");
+    if (action === "scores") return setPauseView("scores");
+    if (action === "friends") return setPauseView("friends");
     if (action === "account") return setPauseView("account");
     if (action === "save") {
       const ok = saveGame(true);
@@ -2628,22 +2774,29 @@
     syncModalOpenClass();
   }
 
-  function openStatsFromTitle() {
+  function openMenuFromTitle(view) {
     if (els.title) els.title.hidden = true;
     state.running = false;
     state.paused = true;
     els.pause.hidden = false;
-    setPauseView("stats");
+    setPauseView(view || "main");
     syncModalOpenClass();
   }
 
+  function openStatsFromTitle() {
+    openMenuFromTitle("stats");
+  }
+
   function openAccountFromTitle() {
-    if (els.title) els.title.hidden = true;
-    state.running = false;
-    state.paused = true;
-    els.pause.hidden = false;
-    setPauseView("account");
-    syncModalOpenClass();
+    openMenuFromTitle("account");
+  }
+
+  function openScoresFromTitle() {
+    openMenuFromTitle("scores");
+  }
+
+  function openFriendsFromTitle() {
+    openMenuFromTitle("friends");
   }
 
   // ── Input ─────────────────────────────────────────────────────────────────
@@ -2889,6 +3042,37 @@
   refreshTitleMeta();
   els.btnStatsTitle?.addEventListener("click", openStatsFromTitle);
   els.btnAccountTitle?.addEventListener("click", openAccountFromTitle);
+  els.btnScoresTitle?.addEventListener("click", openScoresFromTitle);
+  els.btnFriendsTitle?.addEventListener("click", openFriendsFromTitle);
+
+  els.scoresTabs?.addEventListener("click", (e) => {
+    const tab = e.target.closest("[data-metric]");
+    if (!tab) return;
+    scoresMetric = tab.getAttribute("data-metric") || "best_sector";
+    renderScoresBoard();
+  });
+  els.friendAddBtn?.addEventListener("click", () => addFriendFromUi());
+  els.friendCodeInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addFriendFromUi();
+    }
+  });
+  els.friendsList?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-friend-remove]");
+    if (!btn) return;
+    const id = btn.getAttribute("data-friend-remove");
+    const o = online();
+    if (!o || !id) return;
+    try {
+      await o.removeFriend(id);
+      if (els.friendsMsg) els.friendsMsg.textContent = "Friend removed.";
+      await renderFriendsBoard();
+    } catch (err) {
+      if (els.friendsMsg) els.friendsMsg.textContent = err.message || "Remove failed.";
+    }
+  });
+
   // Click active loadout chips → how-to popup (freezes until dismissed)
   els.powerBar?.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-help-key]");

@@ -23,7 +23,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20260728help" />
+  <link rel="stylesheet" href="styles.css?v=20260729social" />
   <link rel="canonical" href="https://www.pushthrugames.com/qr/" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23000'/><rect x='2' y='2' width='10' height='10' fill='%23fff'/><rect x='4' y='4' width='6' height='6' fill='%23000'/><rect x='20' y='2' width='10' height='10' fill='%23fff'/><rect x='22' y='4' width='6' height='6' fill='%23000'/><rect x='2' y='20' width='10' height='10' fill='%23fff'/><rect x='4' y='22' width='6' height='6' fill='%23000'/><rect x='14' y='14' width='4' height='4' fill='%23fff'/></svg>" />
 </head>
@@ -113,17 +113,47 @@
       <div class="modal-card-body">
         <div class="pause-view" id="pause-view-main">
           <nav class="pause-nav" aria-label="Pause menu">
-            <button type="button" class="pause-btn" data-pause-action="resume">Resume</button>
+            <p class="menu-section">Run</p>
+            <button type="button" class="pause-btn" data-pause-action="resume">▶ Resume</button>
             <button type="button" class="pause-btn" data-pause-action="save">Save game</button>
             <button type="button" class="pause-btn" data-pause-action="load">Load game</button>
-            <button type="button" class="pause-btn" data-pause-action="controls">Controls</button>
-            <button type="button" class="pause-btn" data-pause-action="powerups">Memory / RAM</button>
-            <button type="button" class="pause-btn" data-pause-action="status">Status</button>
+            <button type="button" class="pause-btn" data-pause-action="status">This run status</button>
+
+            <p class="menu-section">Social &amp; ranks</p>
+            <button type="button" class="pause-btn" data-pause-action="scores">🏆 High scores</button>
+            <button type="button" class="pause-btn" data-pause-action="friends">◎ Friends</button>
             <button type="button" class="pause-btn" data-pause-action="stats">Lifetime &amp; Account LV</button>
-            <button type="button" class="pause-btn" data-pause-action="account">Account</button>
+
+            <p class="menu-section">Codex &amp; help</p>
+            <button type="button" class="pause-btn" data-pause-action="powerups">Memory / RAM</button>
+            <button type="button" class="pause-btn" data-pause-action="controls">Controls</button>
+            <button type="button" class="pause-btn" data-pause-action="account">Account / cloud</button>
+
             <button type="button" class="pause-btn pause-btn-danger" data-pause-action="quit">Quit to title</button>
           </nav>
-          <p class="hint pause-hint">Esc resume · scroll if needed</p>
+          <p class="hint pause-hint">Esc resume · click loadout chips for how-to</p>
+        </div>
+
+        <div class="pause-view" id="pause-view-scores" hidden>
+          <div class="board-tabs" id="scores-tabs" role="tablist">
+            <button type="button" class="board-tab active" data-metric="best_sector">Best sector</button>
+            <button type="button" class="board-tab" data-metric="account_level">Account LV</button>
+            <button type="button" class="board-tab" data-metric="threats_purged">Threats</button>
+            <button type="button" class="board-tab" data-metric="sectors_cleared">Sectors</button>
+            <button type="button" class="board-tab" data-metric="runs_started">Runs</button>
+          </div>
+          <p class="board-msg" id="scores-msg">Loading…</p>
+          <ol class="board-list" id="scores-list"></ol>
+        </div>
+
+        <div class="pause-view" id="pause-view-friends" hidden>
+          <div class="friend-add-row">
+            <input type="text" id="friend-code-input" maxlength="12" placeholder="Friend code" autocomplete="off" spellcheck="false" />
+            <button type="button" class="btn btn-primary" id="friend-add-btn">Add</button>
+          </div>
+          <p class="board-msg" id="friends-msg">Sign in to use friends.</p>
+          <div class="my-code-line" id="friends-my-code"></div>
+          <ul class="board-list friend-list" id="friends-list"></ul>
         </div>
 
         <div class="pause-view" id="pause-view-account" hidden>
@@ -190,6 +220,10 @@
       <div class="title-actions">
         <button type="button" class="btn btn-primary" id="btn-start">Awaken</button>
         <button type="button" class="btn" id="btn-load-title" hidden>Load game</button>
+      </div>
+      <div class="title-actions title-actions-secondary">
+        <button type="button" class="btn" id="btn-scores-title">High scores</button>
+        <button type="button" class="btn" id="btn-friends-title">Friends</button>
         <button type="button" class="btn" id="btn-stats-title">Lifetime</button>
         <button type="button" class="btn" id="btn-account-title">Account</button>
       </div>
@@ -246,9 +280,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=20260728help"></script>
-  <script src="online.js?v=20260728help"></script>
-  <script src="game.js?v=20260728help"></script>
+  <script src="config.js?v=20260729social"></script>
+  <script src="online.js?v=20260729social"></script>
+  <script src="game.js?v=20260729social"></script>
   <script src="legal-consent.js?v=1" defer></script>
 </body>
 </html>

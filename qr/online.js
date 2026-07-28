@@ -127,21 +127,17 @@
     return data;
   }
 
-  /** Code+password style (synthetic email), same idea as Push Thru */
   async function signUpWithCode(password, displayName) {
     if (!api.sb) throw new Error("Offline");
-    // Create anonymous first so we get a user, then ensure profile for code
     if (!api.session) await signInGuest();
     const prof = await ensureProfile(displayName);
     const code = prof?.friend_code;
     if (!code) throw new Error("No friend code");
     const email = codeEmail(code);
-    // Link credentials if available; else sign-up path for non-anon
     try {
       const { error } = await api.sb.auth.updateUser({ email, password });
       if (error) throw error;
     } catch (e) {
-      // Fallback: password accounts via signUp with synthetic email (fresh)
       console.warn("updateUser link failed, try password set later", e);
     }
     return prof;
@@ -159,10 +155,6 @@
     api.online = false;
   }
 
-  /**
-   * Sync progress (monotonic). Safe to call often.
-   * @param {{ bestSector?: number, sectorsClearedDelta?: number, threatsDelta?: number, runStarted?: boolean }} p
-   */
   async function reportProgress(p = {}) {
     if (!api.sb || !api.session?.user) return null;
     const { data, error } = await api.sb.rpc("qr_report_progress", {
@@ -179,18 +171,95 @@
     return data;
   }
 
-  async function fetchLeaderboard(limit = 20) {
-    if (!api.sb || !api.session?.user) return [];
-    const { data, error } = await api.sb
-      .from("qr_profiles")
-      .select("display_name, friend_code, best_sector, sectors_cleared, threats_purged")
-      .order("best_sector", { ascending: false })
-      .limit(limit);
+  async function reportMeta(p = {}) {
+    if (!api.sb || !api.session?.user) return null;
+    try {
+      const { data, error } = await api.sb.rpc("qr_report_meta", {
+        p_account_level: p.accountLevel ?? null,
+        p_account_xp: p.accountXp ?? null,
+        p_best_sector: p.bestSector ?? null,
+        p_stats: p.stats ?? null,
+      });
+      if (error) throw error;
+      if (data) api.profile = { ...api.profile, ...data };
+      return data;
+    } catch (e) {
+      console.warn("qr_report_meta", e);
+      return null;
+    }
+  }
+
+  /**
+   * @param {'best_sector'|'sectors_cleared'|'threats_purged'|'account_level'|'runs_started'} metric
+   */
+  async function fetchLeaderboard(metric = "best_sector", limit = 25) {
+    if (!api.sb || !api.session?.user) return { ok: false, rows: [], error: "Sign in required" };
+    const { data, error } = await api.sb.rpc("qr_leaderboard", {
+      p_metric: metric,
+      p_limit: limit,
+    });
+    if (error) {
+      // Fallback: direct table query if RPC missing
+      console.warn("qr_leaderboard", error);
+      const col =
+        {
+          best_sector: "best_sector",
+          sectors_cleared: "sectors_cleared",
+          threats_purged: "threats_purged",
+          account_level: "account_level",
+          runs_started: "runs_started",
+        }[metric] || "best_sector";
+      const res = await api.sb
+        .from("qr_profiles")
+        .select("id, display_name, friend_code, best_sector, sectors_cleared, threats_purged, runs_started, account_level")
+        .order(col, { ascending: false })
+        .limit(limit);
+      if (res.error) return { ok: false, rows: [], error: res.error.message };
+      const rows = (res.data || []).map((r, i) => ({
+        rank: i + 1,
+        ...r,
+        score: r[col] ?? 0,
+      }));
+      return { ok: true, rows, error: null };
+    }
+    return { ok: true, rows: data || [], error: null };
+  }
+
+  async function listFriends() {
+    if (!api.sb || !api.session?.user) return { ok: false, rows: [], error: "Sign in required" };
+    const { data, error } = await api.sb.rpc("qr_list_friends");
+    if (error) {
+      console.warn("qr_list_friends", error);
+      return { ok: false, rows: [], error: error.message };
+    }
+    return { ok: true, rows: data || [], error: null };
+  }
+
+  async function addFriendByCode(code) {
+    if (!api.sb || !api.session?.user) throw new Error("Sign in required");
+    const { data, error } = await api.sb.rpc("qr_add_friend_by_code", {
+      p_code: String(code || "").trim(),
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  async function removeFriend(friendId) {
+    if (!api.sb || !api.session?.user) throw new Error("Sign in required");
+    const { error } = await api.sb.rpc("qr_remove_friend", { p_friend_id: friendId });
+    if (error) throw error;
+  }
+
+  async function lookupCode(code) {
+    if (!api.sb || !api.session?.user) return null;
+    const { data, error } = await api.sb.rpc("qr_lookup_code", {
+      p_code: String(code || "").trim(),
+    });
     if (error) {
       console.warn(error);
-      return [];
+      return null;
     }
-    return data || [];
+    return (data && data[0]) || null;
   }
 
   async function deleteAccount() {
@@ -212,7 +281,12 @@
     signInWithCode,
     signOut,
     reportProgress,
+    reportMeta,
     fetchLeaderboard,
+    listFriends,
+    addFriendByCode,
+    removeFriend,
+    lookupCode,
     deleteAccount,
     codeEmail,
     loginDomain,
