@@ -140,66 +140,130 @@ body {
   touch-action: none;
 }
 
-.title-screen {
-  position: absolute;
+/* Full-viewport modals — not clipped by game stage */
+.modal-layer {
+  position: fixed;
   inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(5, 5, 8, 0.82);
-  backdrop-filter: blur(4px);
-  z-index: 4;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: rgba(5, 5, 8, 0.88);
+  backdrop-filter: blur(6px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
+.modal-layer.pause-screen {
+  z-index: 1010;
+}
+
+.modal-layer.welcome-screen {
+  z-index: 1020;
+}
+
+.modal-layer[hidden],
 .overlay[hidden],
 .title-screen[hidden],
-.pause-screen[hidden] {
+.pause-screen[hidden],
+.welcome-screen[hidden] {
   display: none !important;
 }
 
-.overlay,
-.pause-screen {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 20px;
-  background: rgba(5, 5, 8, 0.82);
-  backdrop-filter: blur(4px);
-  z-index: 5;
-}
-
-.pause-screen {
-  z-index: 6;
-  background: rgba(5, 5, 8, 0.88);
+.modal-card,
+.overlay-card,
+.title-inner,
+.pause-card,
+.welcome-card {
+  width: min(100%, 440px);
+  max-width: 100%;
+  max-height: min(92vh, 900px);
+  margin: auto;
+  text-align: center;
+  padding: 0;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: color-mix(in srgb, var(--panel) 96%, #000);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .overlay-card,
-.title-inner,
-.pause-card {
-  max-width: 420px;
-  text-align: center;
+.title-inner {
   padding: 24px 22px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
-  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  display: block;
+  overflow-y: auto;
+  max-height: min(92vh, 900px);
 }
 
-.pause-card {
-  width: min(100%, 400px);
+.pause-card,
+.welcome-card,
+.modal-card-tall {
   text-align: left;
 }
 
-.pause-card .overlay-kicker,
-.pause-card h2 {
+.modal-card-head {
+  flex-shrink: 0;
+  padding: 18px 18px 8px;
   text-align: center;
 }
 
+.modal-card-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 8px 18px 12px;
+}
+
+.modal-card-foot {
+  flex-shrink: 0;
+  padding: 12px 18px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.modal-card-foot .btn {
+  width: 100%;
+}
+
+.welcome-foot .btn-primary {
+  order: -1;
+}
+
+.pause-card .overlay-kicker,
+.pause-card h2,
+.welcome-card .overlay-kicker,
+.welcome-card h2 {
+  text-align: center;
+  margin: 0 0 6px;
+}
+
 .pause-sub {
-  margin: 0 0 14px;
+  margin: 0 0 8px;
   text-align: center;
   color: var(--muted);
   font-size: 0.8rem;
+}
+
+.welcome-blurb {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+body.modal-open {
+  overflow: hidden;
 }
 
 .pause-nav {
@@ -265,10 +329,10 @@ body {
 }
 
 .pause-scroll {
-  max-height: 220px;
-  overflow: auto;
+  max-height: none;
+  overflow: visible;
   margin-bottom: 14px;
-  padding-right: 4px;
+  padding-right: 2px;
   font-size: 0.82rem;
   line-height: 1.45;
   color: var(--muted);

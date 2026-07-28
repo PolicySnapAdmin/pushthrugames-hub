@@ -25,6 +25,7 @@
     powerBar: document.getElementById("power-bar"),
     log: document.getElementById("log-list"),
     title: document.getElementById("title-screen"),
+    welcome: document.getElementById("welcome-screen"),
     overlay: document.getElementById("overlay"),
     overlayKicker: document.getElementById("overlay-kicker"),
     overlayTitle: document.getElementById("overlay-title"),
@@ -32,6 +33,7 @@
     overlayOk: document.getElementById("overlay-ok"),
     btnStart: document.getElementById("btn-start"),
     btnLoadTitle: document.getElementById("btn-load-title"),
+    btnAccountTitle: document.getElementById("btn-account-title"),
     pause: document.getElementById("pause-screen"),
     pauseHeading: document.getElementById("pause-heading"),
     pauseSub: document.getElementById("pause-sub"),
@@ -59,7 +61,66 @@
     accountSignout: document.getElementById("account-signout"),
     titleMeta: document.getElementById("title-meta"),
     btnStatsTitle: document.getElementById("btn-stats-title"),
+    welcomeName: document.getElementById("welcome-name"),
+    welcomeEmail: document.getElementById("welcome-email"),
+    welcomePass: document.getElementById("welcome-pass"),
+    welcomeMsg: document.getElementById("welcome-msg"),
+    welcomeCreate: document.getElementById("welcome-create"),
+    welcomeSignin: document.getElementById("welcome-signin"),
+    welcomePlay: document.getElementById("welcome-play"),
+    welcomeGuest: document.getElementById("welcome-guest"),
   };
+
+  const WELCOME_SKIP_KEY = "qr-welcome-skip-v1";
+
+  function setWelcomeMsg(msg) {
+    if (els.welcomeMsg) els.welcomeMsg.textContent = msg;
+  }
+
+  function syncModalOpenClass() {
+    const any =
+      (els.welcome && !els.welcome.hidden) ||
+      (els.pause && !els.pause.hidden) ||
+      (els.title && !els.title.hidden) ||
+      (els.overlay && !els.overlay.hidden);
+    document.body.classList.toggle("modal-open", !!any);
+  }
+
+  function showWelcome() {
+    if (els.welcome) els.welcome.hidden = false;
+    if (els.title) els.title.hidden = true;
+    syncModalOpenClass();
+  }
+
+  function hideWelcome() {
+    if (els.welcome) els.welcome.hidden = true;
+    syncModalOpenClass();
+  }
+
+  function goToTitleFromWelcome() {
+    hideWelcome();
+    if (els.title) els.title.hidden = false;
+    refreshTitleMeta();
+    refreshTitleLoadBtn();
+    syncModalOpenClass();
+  }
+
+  function hasEmailAccount() {
+    const u = online()?.api?.session?.user;
+    if (!u) return false;
+    if (u.is_anonymous) return false;
+    const email = u.email || "";
+    if (!email || email.includes("@login.qr.")) return false;
+    return true;
+  }
+
+  function shouldShowWelcome() {
+    try {
+      if (localStorage.getItem(WELCOME_SKIP_KEY) === "1") return false;
+    } catch (_) {}
+    if (hasEmailAccount()) return false;
+    return true;
+  }
 
   // ── Online helpers ────────────────────────────────────────────────────────
   function online() {
@@ -355,7 +416,12 @@
   }
 
   function isBusyUi() {
-    return state.paused || !els.overlay.hidden || !els.title.hidden;
+    return (
+      state.paused ||
+      (els.overlay && !els.overlay.hidden) ||
+      (els.title && !els.title.hidden) ||
+      (els.welcome && !els.welcome.hidden)
+    );
   }
 
   function rng(seed) {
@@ -770,10 +836,12 @@
     els.overlayBody.textContent = body;
     els.overlay.hidden = false;
     state.onContinue = onContinue || null;
+    syncModalOpenClass();
   }
 
   function hideOverlay() {
     els.overlay.hidden = true;
+    syncModalOpenClass();
     const fn = state.onContinue;
     state.onContinue = null;
     if (fn) fn();
@@ -984,12 +1052,13 @@
   }
 
   function openPause() {
-    if (!state.running || state.dead || !els.overlay.hidden) return;
+    if (!state.running || state.dead || (els.overlay && !els.overlay.hidden)) return;
     state.paused = true;
     state.keys.clear();
     els.pause.hidden = false;
     if (els.pauseToast) els.pauseToast.hidden = true;
     setPauseView("main");
+    syncModalOpenClass();
   }
 
   function closePause(resumeLog) {
@@ -1002,22 +1071,27 @@
     } else if (resumeLog) {
       log("Resumed.");
     }
+    syncModalOpenClass();
   }
 
   function quitToTitle() {
     closePause(false);
     state.running = false;
     state.player = null;
-    els.overlay.hidden = true;
+    if (els.overlay) els.overlay.hidden = true;
     state.onContinue = null;
     els.title.hidden = false;
     refreshTitleLoadBtn();
     refreshTitleMeta();
+    syncModalOpenClass();
   }
 
   function handlePauseAction(action) {
     if (action === "resume") return closePause(true);
-    if (action === "back") return setPauseView("main");
+    if (action === "back" || action === "back-or-close") {
+      if (state.pauseView !== "main") return setPauseView("main");
+      return closePause(true);
+    }
     if (action === "controls") return setPauseView("controls");
     if (action === "powerups") return setPauseView("powerups");
     if (action === "status") return setPauseView("status");
@@ -2373,8 +2447,9 @@
 
   function start() {
     closePause(false);
-    els.title.hidden = true;
-    els.overlay.hidden = true;
+    hideWelcome();
+    if (els.title) els.title.hidden = true;
+    if (els.overlay) els.overlay.hidden = true;
     state.onContinue = null;
     state.running = true;
     state.dead = false;
@@ -2389,14 +2464,25 @@
     trackRunStart();
     buildLevel(1);
     syncProgress({ runStarted: true, bestSector: 1 });
+    syncModalOpenClass();
   }
 
   function openStatsFromTitle() {
-    els.title.hidden = true;
+    if (els.title) els.title.hidden = true;
     state.running = false;
     state.paused = true;
     els.pause.hidden = false;
     setPauseView("stats");
+    syncModalOpenClass();
+  }
+
+  function openAccountFromTitle() {
+    if (els.title) els.title.hidden = true;
+    state.running = false;
+    state.paused = true;
+    els.pause.hidden = false;
+    setPauseView("account");
+    syncModalOpenClass();
   }
 
   // ── Input ─────────────────────────────────────────────────────────────────
@@ -2406,6 +2492,16 @@
     state.keys.add(k);
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "enter"].includes(k)) e.preventDefault();
 
+    if (els.welcome && !els.welcome.hidden) {
+      if (k === "escape") {
+        e.preventDefault();
+        try {
+          localStorage.setItem(WELCOME_SKIP_KEY, "1");
+        } catch (_) {}
+        goToTitleFromWelcome();
+      }
+      return;
+    }
     if (state.paused) {
       if (k === "escape") {
         e.preventDefault();
@@ -2414,7 +2510,7 @@
       }
       return;
     }
-    if (!els.overlay.hidden) {
+    if (els.overlay && !els.overlay.hidden) {
       if (isContinue || k === "escape" || k === "e") {
         e.preventDefault();
         hideOverlay();
@@ -2422,7 +2518,7 @@
       return;
     }
     if (!state.running) {
-      if (isContinue) {
+      if (isContinue && els.title && !els.title.hidden) {
         e.preventDefault();
         start();
       }
@@ -2494,12 +2590,12 @@
 
   async function wireAccountUi() {
     const o = online();
-    if (!o) return;
+
     els.accountSignin?.addEventListener("click", async () => {
       try {
         setAccountMsg("Signing in…");
         await o.signInWithEmail(els.accountEmail?.value?.trim(), els.accountPass?.value || "");
-        setAccountMsg("Signed in.");
+        setAccountMsg("Signed in. Tap Back / Close anytime.");
         renderPauseAccount();
       } catch (err) {
         setAccountMsg(err.message || "Sign-in failed");
@@ -2513,7 +2609,7 @@
           els.accountPass?.value || "",
           els.accountName?.value?.trim() || "Signal"
         );
-        setAccountMsg("Created.");
+        setAccountMsg("Account created. Tap Back / Close to continue.");
         renderPauseAccount();
       } catch (err) {
         setAccountMsg(err.message || "Sign-up failed");
@@ -2523,7 +2619,7 @@
       try {
         setAccountMsg("Guest…");
         await o.signInGuest();
-        setAccountMsg("Guest ready.");
+        setAccountMsg("Guest ready. Tap Back / Close.");
         renderPauseAccount();
       } catch (err) {
         setAccountMsg(err.message || "Guest failed");
@@ -2534,10 +2630,73 @@
       setAccountMsg("Signed out.");
       renderPauseAccount();
     });
+
+    // Welcome soft-gate
+    els.welcomePlay?.addEventListener("click", () => {
+      try {
+        localStorage.setItem(WELCOME_SKIP_KEY, "1");
+      } catch (_) {}
+      goToTitleFromWelcome();
+    });
+    els.welcomeGuest?.addEventListener("click", async () => {
+      try {
+        setWelcomeMsg("Starting guest…");
+        if (o) await o.signInGuest();
+        try {
+          localStorage.setItem(WELCOME_SKIP_KEY, "1");
+        } catch (_) {}
+        goToTitleFromWelcome();
+      } catch (err) {
+        setWelcomeMsg(err.message || "Guest failed — you can still play without account.");
+      }
+    });
+    els.welcomeCreate?.addEventListener("click", async () => {
+      try {
+        setWelcomeMsg("Creating account…");
+        if (!o) throw new Error("Cloud offline");
+        await o.signUpWithEmail(
+          els.welcomeEmail?.value?.trim(),
+          els.welcomePass?.value || "",
+          els.welcomeName?.value?.trim() || "Signal"
+        );
+        setWelcomeMsg("Account created — continuing…");
+        try {
+          localStorage.setItem(WELCOME_SKIP_KEY, "1");
+        } catch (_) {}
+        goToTitleFromWelcome();
+      } catch (err) {
+        setWelcomeMsg(err.message || "Create failed");
+      }
+    });
+    els.welcomeSignin?.addEventListener("click", async () => {
+      try {
+        setWelcomeMsg("Signing in…");
+        if (!o) throw new Error("Cloud offline");
+        await o.signInWithEmail(els.welcomeEmail?.value?.trim(), els.welcomePass?.value || "");
+        setWelcomeMsg("Signed in — continuing…");
+        try {
+          localStorage.setItem(WELCOME_SKIP_KEY, "1");
+        } catch (_) {}
+        goToTitleFromWelcome();
+      } catch (err) {
+        setWelcomeMsg(err.message || "Sign-in failed");
+      }
+    });
+
     window.addEventListener("qr-auth", () => {
       if (state.paused && state.pauseView === "account") renderPauseAccount();
     });
-    await o.init();
+
+    if (o) await o.init();
+
+    // First paint: soft account page or title
+    if (shouldShowWelcome()) {
+      showWelcome();
+    } else {
+      hideWelcome();
+      if (els.title) els.title.hidden = false;
+    }
+    syncModalOpenClass();
   }
 
   // Patch controls text if present
@@ -2568,6 +2727,9 @@
   refreshTitleLoadBtn();
   refreshTitleMeta();
   els.btnStatsTitle?.addEventListener("click", openStatsFromTitle);
+  els.btnAccountTitle?.addEventListener("click", openAccountFromTitle);
+  // Title hidden until welcome resolves
+  if (els.title) els.title.hidden = true;
   wireAccountUi();
   requestAnimationFrame(loop);
 })();
