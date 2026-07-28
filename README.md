@@ -6,8 +6,10 @@
 
 | Game | Live URL |
 |------|----------|
-| Push Thru | https://www.pushthrugame.com/ |
-| QR | Coming soon (card on hub only) |
+| Push Thru | https://www.pushthrugame.com/ (own domain) |
+| QR | https://www.pushthrugames.com/qr/ (this repo, `/qr` folder) |
+
+QR is embedded on the studio domain to avoid a second custom domain. Source of truth for development can still be `C:\Users\conor\qr-game` — copy into `qr/` when shipping.
 
 ## Deploy (GitHub Pages)
 

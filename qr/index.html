@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0a0c" />
+  <meta name="description" content="QR — You are a code. Fight noise, collect modules, face bosses every 3 and 10 levels." />
+  <title>QR — Purpose Unknown</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=20260728hub" />
+  <link rel="canonical" href="https://www.pushthrugames.com/qr/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23000'/><rect x='2' y='2' width='10' height='10' fill='%23fff'/><rect x='4' y='4' width='6' height='6' fill='%23000'/><rect x='20' y='2' width='10' height='10' fill='%23fff'/><rect x='22' y='4' width='6' height='6' fill='%23000'/><rect x='2' y='20' width='10' height='10' fill='%23fff'/><rect x='4' y='22' width='6' height='6' fill='%23000'/><rect x='14' y='14' width='4' height='4' fill='%23fff'/></svg>" />
+</head>
+<body>
+  <div id="app">
+    <header class="top">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <div>
+          <h1>QR</h1>
+          <p class="tag">Purpose unknown</p>
+        </div>
+      </div>
+      <div class="hud" id="hud">
+        <div class="hud-item">
+          <span class="hud-label">Level</span>
+          <span class="hud-value" id="hud-level">1</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">HP</span>
+          <span class="hud-value" id="hud-hp">10</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Threats</span>
+          <span class="hud-value" id="hud-threats">0</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Loadout</span>
+          <span class="hud-value" id="hud-mods">—</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="power-bar" id="power-bar" aria-label="Active modules"></div>
+
+    <main class="stage-wrap">
+      <canvas id="game" width="720" height="480" aria-label="QR world"></canvas>
+      <div class="overlay" id="overlay" hidden>
+        <div class="overlay-card" id="overlay-card">
+          <p class="overlay-kicker" id="overlay-kicker">SIGNAL</p>
+          <h2 id="overlay-title">…</h2>
+          <p id="overlay-body">…</p>
+          <button type="button" class="btn" id="overlay-ok">Continue · Enter / Space</button>
+        </div>
+      </div>
+
+      <div class="pause-screen" id="pause-screen" hidden>
+        <div class="pause-card">
+          <p class="overlay-kicker">PAUSED</p>
+          <h2 id="pause-heading">Menu</h2>
+          <p class="pause-sub" id="pause-sub">Sector frozen</p>
+
+          <div class="pause-view" id="pause-view-main">
+            <nav class="pause-nav" aria-label="Pause menu">
+              <button type="button" class="pause-btn" data-pause-action="resume">Resume</button>
+              <button type="button" class="pause-btn" data-pause-action="save">Save game</button>
+              <button type="button" class="pause-btn" data-pause-action="load">Load game</button>
+              <button type="button" class="pause-btn" data-pause-action="controls">Controls</button>
+              <button type="button" class="pause-btn" data-pause-action="powerups">Memory / RAM</button>
+              <button type="button" class="pause-btn" data-pause-action="status">Status</button>
+              <button type="button" class="pause-btn" data-pause-action="stats">Lifetime &amp; Account LV</button>
+              <button type="button" class="pause-btn" data-pause-action="account">Account</button>
+              <button type="button" class="pause-btn pause-btn-danger" data-pause-action="quit">Quit to title</button>
+            </nav>
+            <p class="hint pause-hint">Esc resume · click a row</p>
+          </div>
+
+          <div class="pause-view" id="pause-view-account" hidden>
+            <div class="pause-scroll" id="pause-account-body"></div>
+            <div class="account-form" id="account-form">
+              <label class="account-label">Display name
+                <input type="text" id="account-name" maxlength="16" placeholder="Signal" autocomplete="nickname" />
+              </label>
+              <label class="account-label">Email
+                <input type="email" id="account-email" placeholder="you@email.com" autocomplete="username" />
+              </label>
+              <label class="account-label">Password
+                <input type="password" id="account-pass" maxlength="72" placeholder="••••••••" autocomplete="current-password" />
+              </label>
+              <div class="title-actions">
+                <button type="button" class="btn btn-primary" id="account-signin">Sign in</button>
+                <button type="button" class="btn" id="account-signup">Create</button>
+                <button type="button" class="btn" id="account-guest">Guest</button>
+                <button type="button" class="btn" id="account-signout">Sign out</button>
+              </div>
+              <p class="hint" id="account-msg">Uses QR’s own Supabase project (qr_*), not Push Thru.</p>
+            </div>
+            <button type="button" class="btn" data-pause-action="back">← Back</button>
+          </div>
+
+          <div class="pause-view" id="pause-view-controls" hidden>
+            <ul class="pause-list">
+              <li><kbd>WASD</kbd> / arrows — move</li>
+              <li><kbd>Space</kbd> / <kbd>E</kbd> — scan (attack)</li>
+              <li><kbd>B</kbd> — rupture soft wall (needs charges)</li>
+              <li><kbd>Enter</kbd> / <kbd>Space</kbd> — continue dialogs</li>
+              <li><kbd>Esc</kbd> — pause / resume / back</li>
+              <li>Tap edges — move · center — scan (touch)</li>
+            </ul>
+            <button type="button" class="btn" data-pause-action="back">← Back</button>
+          </div>
+
+          <div class="pause-view" id="pause-view-powerups" hidden>
+            <div class="pause-scroll" id="pause-powerups-body"></div>
+            <button type="button" class="btn" data-pause-action="back">← Back</button>
+          </div>
+
+          <div class="pause-view" id="pause-view-status" hidden>
+            <div class="pause-scroll" id="pause-status-body"></div>
+            <button type="button" class="btn" data-pause-action="back">← Back</button>
+          </div>
+
+          <div class="pause-view" id="pause-view-stats" hidden>
+            <div class="account-level-card" id="stats-level-card"></div>
+            <div class="pause-scroll" id="pause-stats-body"></div>
+            <button type="button" class="btn" data-pause-action="back">← Back</button>
+          </div>
+
+          <p class="pause-toast" id="pause-toast" hidden></p>
+        </div>
+      </div>
+
+      <div class="title-screen" id="title-screen">
+        <div class="title-inner">
+          <div class="title-qr" aria-hidden="true"></div>
+          <h2>You are a code.</h2>
+          <p>
+            Clear sectors. Collect modules. Survive noise.<br />
+            Mini-boss every 3 levels · major boss every 10.
+          </p>
+          <p class="title-meta" id="title-meta">Account LV 1 · 0 XP</p>
+          <div class="title-actions">
+            <button type="button" class="btn btn-primary" id="btn-start">Awaken</button>
+            <button type="button" class="btn" id="btn-load-title" hidden>Load game</button>
+            <button type="button" class="btn" id="btn-stats-title">Lifetime</button>
+          </div>
+          <p class="hint">WASD · Space/E scan · F bolt · Esc pause · meta level survives runs</p>
+        </div>
+      </div>
+    </main>
+
+    <aside class="log" aria-live="polite">
+      <h3>Feed</h3>
+      <ul id="log-list"></ul>
+    </aside>
+
+    <footer class="foot">
+      <span>Push Thru Games</span>
+      <a href="https://www.pushthrugames.com/">Studio hub</a>
+    </footer>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js?v=20260728hub"></script>
+  <script src="online.js?v=20260728hub"></script>
+  <script src="game.js?v=20260728hub"></script>
+</body>
+</html>
