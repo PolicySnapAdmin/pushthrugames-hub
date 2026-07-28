@@ -139,6 +139,31 @@ body {
   color: #ffb0c0;
 }
 
+button.power-chip-btn {
+  appearance: none;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  line-height: 1.2;
+  transition: filter 0.12s, transform 0.08s, box-shadow 0.12s;
+}
+
+button.power-chip-btn:hover {
+  filter: brightness(1.12);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+button.power-chip-btn:active {
+  transform: scale(0.97);
+}
+
+button.power-chip-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .hud-label {
   display: block;
   font-size: 0.65rem;

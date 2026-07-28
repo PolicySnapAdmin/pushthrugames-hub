@@ -331,6 +331,155 @@
   const POWER_IDS = Object.keys(POWERUPS);
   const RARITY_WEIGHT = { common: 52, uncommon: 28, rare: 15, legendary: 5 };
 
+  /** How-to text for active loadout chips (click → freeze + popup) */
+  const MODULE_HOW = {
+    swift: "Passive. You move faster between tiles. Stacks with Boot / Warp / Godspeed.",
+    repair: "Instant when picked up. Heals HP. No key to press — already applied.",
+    spike: "Passive. Space/E scan deals more damage.",
+    rupture: "Press B next to a cracked (soft) wall to break it. Each pick adds charges.",
+    fortify: "Passive. Higher max HP. Heal already applied on pickup.",
+    crumb: "Instant heal + 1 break charge when picked up.",
+    focus: "Passive. Scans (Space/E) recharge a bit faster.",
+    boot: "Passive. Slightly faster movement.",
+    patch: "Instant heal when picked up.",
+    nudge: "Passive. Slightly higher scan damage.",
+    expand: "Passive. Space/E hits enemies farther away (higher scan range).",
+    overclock: "Passive. Faster scans + a bit more damage.",
+    nullify: "Passive. Extra damage multiplier vs mini/major bosses.",
+    bolt: "Press F to fire a bolt in the direction you last moved. Face the threat first (WASD).",
+    blade: "Passive with Space/E — scan reaches farther in your facing direction like a sword.",
+    aegis: "Passive. Blocks hits automatically (shield charges). No key.",
+    magnet: "Passive. Step near a module to pull it onto you.",
+    thorns: "Passive. Enemies that touch you take reflected damage.",
+    vamp: "Passive. Heal a little when you purge a threat.",
+    bombkit: "Press G to drop a bomb under you. Explodes after a short fuse (hurts you too if close).",
+    phase: "Passive. Walk through soft (cracked) walls without B.",
+    decoy: "Press V to drop a decoy. Hostiles chase it instead of you for a while.",
+    hulk: "Timed. Walk into enemies to smash them. Watch the HULK timer chip.",
+    ghost: "Timed / limited passes. Walk through enemies. Contact damage is reduced while active.",
+    superspeed: "Passive. Much faster movement (Warp).",
+    joinus: "Press C near a non-boss enemy to convert it into an ally (uses a charge).",
+    rail: "Press F for long-range bolts. Face with WASD first.",
+    cleave: "Space/E swings a wide arc in your facing direction.",
+    fortress: "Passive. Large shield stack + HP. Shields auto-block hits.",
+    multibeam: "Passive. Space/E range and damage are much stronger.",
+    chaos: "Instant mix of small boosts when picked up.",
+    mirror: "Passive. Strong contact thorns.",
+    apocalypse: "Passive huge damage + boss shred. Also enables F bolts.",
+    spectre: "Long ghost phase + walk through soft walls. Move through threats carefully.",
+    titan: "Long hulk window + big HP. Walk into enemies to crush them.",
+    oracle: "Huge scan range + strong F bolts. Face then F or Space/E.",
+    swarm: "Press C to convert — you start with several Join-Us charges.",
+    godspeed: "Extreme move speed + shield charges. Passive around threats.",
+  };
+
+  const STATUS_HELP = {
+    ram: {
+      title: "Memory / RAM",
+      body: "Shows how many module types you’ve decoded forever on this browser.\nUnknown floor pickups show as ??? until you walk into them once.\nOpen Pause → Memory / RAM for the full codex.",
+    },
+    bolt: {
+      title: "Bolts active",
+      body: "How to use: press F to shoot in the direction you last moved (WASD sets facing).\nRange and damage grow with Bolt / Rail / Oracle / Apocalypse modules.",
+    },
+    blade: {
+      title: "Blade / sword",
+      body: "How to use: press Space or E to scan/slash. Reach is longer toward where you face.\nCleave makes a wider arc.",
+    },
+    shield: {
+      title: "Shield charges",
+      body: "How to use: automatic. When you take a hit, one charge is spent instead of HP.\nNo key required.",
+    },
+    hulk: {
+      title: "Hulk mode",
+      body: "How to use: walk into enemies to smash them while the timer is up.\nTimer shows on this chip (seconds remaining).",
+    },
+    ghost: {
+      title: "Ghost phase",
+      body: "How to use: walk through hostile tiles/enemies while active.\nUses time and/or limited passes. Great for escapes.",
+    },
+    join: {
+      title: "Join-Us charges",
+      body: "How to use: press C when a non-boss enemy is nearby to convert it into an ally.\nAllies fight other threats. Bosses cannot be converted.",
+    },
+    bomb: {
+      title: "Bombs",
+      body: "How to use: press G to drop a bomb on your tile.\nIt fuses, then damages nearby enemies (and you if you’re too close). Also cracks soft walls.",
+    },
+    warp: {
+      title: "Warp / super speed",
+      body: "How to use: passive. Your movement delay is much lower — just WASD as usual.",
+    },
+    decoy: {
+      title: "Decoys",
+      body: "How to use: press V to drop a decoy. Enemies path toward it instead of you for a while.",
+    },
+    phase: {
+      title: "Phase soft walls",
+      body: "How to use: passive. Walk into soft (cracked) walls without spending B charges.",
+    },
+    magnet: {
+      title: "Magnet",
+      body: "How to use: passive. Modules on adjacent tiles pull onto you when you step near them.",
+    },
+    thorns: {
+      title: "Thorns",
+      body: "How to use: passive. When a hostile touches you, it takes reflected damage.",
+    },
+    miniboss: {
+      title: "Mini-boss sector",
+      body: "This sector includes a Hardened Reader (every 3 sectors).\nFocus it with Nullify / high damage. Clear all hostiles to open the east exit.",
+    },
+    majorboss: {
+      title: "Major boss sector",
+      body: "Every 10 sectors a major protocol boss appears.\nStack boss damage (Nullify / Apocalypse). Exit opens when all hostiles are down.",
+    },
+    exit: {
+      title: "Exit open",
+      body: "All hostiles cleared. Walk onto the glowing exit beacon on the east side of the map to advance.",
+    },
+    maze: {
+      title: "Maze style",
+      body: "This sector’s layout type (rooms, corridors, arena, etc.).\nExplore carefully — soft walls, ice, and hazards may appear as you climb.",
+    },
+  };
+
+  function getHelpForKey(key) {
+    if (!key) return null;
+    if (key.startsWith("mod:")) {
+      const id = key.slice(4);
+      const def = POWERUPS[id];
+      if (!def) return null;
+      const how = MODULE_HOW[id] || def.desc;
+      const known = isKnown(id);
+      return {
+        kicker: "HOW TO USE",
+        title: known ? `${def.letter} · ${def.name}` : "???",
+        body: known
+          ? `${def.desc}\n\n${how}\n\nRarity: ${def.rarity} · Shape: ${def.shape}\n\nClick Continue to unfreeze.`
+          : "Unknown module in Memory. Walk into one on the map to decode it.\n\nClick Continue to unfreeze.",
+      };
+    }
+    const st = STATUS_HELP[key];
+    if (!st) return null;
+    return {
+      kicker: "HOW TO USE",
+      title: st.title,
+      body: `${st.body}\n\nClick Continue to unfreeze.`,
+    };
+  }
+
+  function openItemHelp(key) {
+    if (!state.running || state.dead) return;
+    if (state.paused) return;
+    if (els.overlay && !els.overlay.hidden) return;
+    const help = getHelpForKey(key);
+    if (!help) return;
+    // Overlay open freezes gameplay via isBusyUi()
+    showOverlay(help.kicker, help.title, help.body);
+    if (els.overlayOk) els.overlayOk.textContent = "Got it · unfreeze";
+  }
+
   const LORE = [
     "VERSION=UNKNOWN. Someone wrote you.",
     "Patterns like you are not meant to leave the quiet.",
@@ -785,6 +934,13 @@
       .replace(/>/g, "&gt;");
   }
 
+  function chipBtn(label, helpKey, opts = {}) {
+    const cls = opts.warn ? "power-chip power-chip-btn warn" : "power-chip power-chip-btn";
+    const style = opts.color ? ` style="color:${opts.color};border-color:${opts.color}66"` : "";
+    const title = opts.title || "Click for how to use (pauses game)";
+    return `<button type="button" class="${cls}" data-help-key="${esc(helpKey)}" title="${esc(title)}"${style}>${label}</button>`;
+  }
+
   function updateHud() {
     const p = state.player;
     if (!p) return;
@@ -795,37 +951,41 @@
     els.mods.textContent = `${p.modules.length} · brk ${p.breaks}`;
 
     const chips = [];
-    chips.push(
-      `<span class="power-chip" title="Decoded in Memory/RAM">${memoryCount()}/${POWER_IDS.length} RAM</span>`
-    );
-    const buffs = [];
-    if (p.canShoot) buffs.push("BOLT");
-    if (p.hasSword) buffs.push("BLADE");
-    if (p.shieldCharges > 0) buffs.push(`SHD${p.shieldCharges}`);
-    if (p.hulkTime > 0) buffs.push(`HULK${Math.ceil(p.hulkTime)}s`);
-    if (p.ghostTime > 0 || p.ghostPasses > 0) buffs.push(`GHOST`);
-    if (p.joinUs > 0) buffs.push(`JOIN${p.joinUs}`);
-    if (p.bombs > 0) buffs.push(`BOMB${p.bombs}`);
-    if (p.superSpeed) buffs.push("WARP");
-    for (const b of buffs) chips.push(`<span class="power-chip warn">${b}</span>`);
+    chips.push(chipBtn(`${memoryCount()}/${POWER_IDS.length} RAM`, "ram", { title: "Memory / RAM — click for help" }));
+
+    if (p.canShoot) chips.push(chipBtn("BOLT", "bolt", { warn: true }));
+    if (p.hasSword) chips.push(chipBtn("BLADE", "blade", { warn: true }));
+    if (p.shieldCharges > 0) chips.push(chipBtn(`SHD${p.shieldCharges}`, "shield", { warn: true }));
+    if (p.hulkTime > 0) chips.push(chipBtn(`HULK${Math.ceil(p.hulkTime)}s`, "hulk", { warn: true }));
+    if (p.ghostTime > 0 || p.ghostPasses > 0) chips.push(chipBtn("GHOST", "ghost", { warn: true }));
+    if (p.joinUs > 0) chips.push(chipBtn(`JOIN${p.joinUs}`, "join", { warn: true }));
+    if (p.bombs > 0) chips.push(chipBtn(`BOMB${p.bombs}`, "bomb", { warn: true }));
+    if (p.decoys > 0) chips.push(chipBtn(`DCY${p.decoys}`, "decoy", { warn: true }));
+    if (p.superSpeed) chips.push(chipBtn("WARP", "warp", { warn: true }));
+    if (p.phaseSoft) chips.push(chipBtn("PHASE", "phase", { warn: true }));
+    if (p.magnet) chips.push(chipBtn("MAG", "magnet", { warn: true }));
+    if (p.thorns > 0) chips.push(chipBtn(`THN${p.thorns}`, "thorns", { warn: true }));
 
     const counts = {};
     for (const id of p.modules) counts[id] = (counts[id] || 0) + 1;
-    const top = Object.entries(counts).slice(-6);
+    const top = Object.entries(counts).slice(-8);
     for (const [id, n] of top) {
       const def = POWERUPS[id];
       if (!def) continue;
       const known = isKnown(id);
+      const label = `${esc(known ? def.letter + " " + def.name : "???")}${n > 1 ? "×" + n : ""}`;
       chips.push(
-        `<span class="power-chip" style="color:${known ? def.color : "#8b8b9a"}" title="${esc(
-          known ? def.desc : "???"
-        )}">${esc(known ? def.letter + " " + def.name : "???")}${n > 1 ? "×" + n : ""}</span>`
+        chipBtn(label, `mod:${id}`, {
+          color: known ? def.color : "#8b8b9a",
+          title: known ? `${def.name} — click for how to use` : "Unknown — click for info",
+        })
       );
     }
-    if (state.bossKind === "mini") chips.push(`<span class="power-chip warn">MINI-BOSS</span>`);
-    if (state.bossKind === "major") chips.push(`<span class="power-chip warn">MAJOR BOSS</span>`);
-    if (state.exitOpen) chips.push(`<span class="power-chip">EXIT</span>`);
-    if (state.mazeName) chips.push(`<span class="power-chip">${esc(state.mazeName)}</span>`);
+    if (state.bossKind === "mini") chips.push(chipBtn("MINI-BOSS", "miniboss", { warn: true }));
+    if (state.bossKind === "major") chips.push(chipBtn("MAJOR BOSS", "majorboss", { warn: true }));
+    if (state.exitOpen) chips.push(chipBtn("EXIT", "exit"));
+    if (state.mazeName) chips.push(chipBtn(esc(state.mazeName), "maze"));
+
     els.powerBar.innerHTML = chips.join("");
   }
 
@@ -841,6 +1001,7 @@
 
   function hideOverlay() {
     els.overlay.hidden = true;
+    if (els.overlayOk) els.overlayOk.textContent = "Continue · Enter / Space";
     syncModalOpenClass();
     const fn = state.onContinue;
     state.onContinue = null;
@@ -2728,6 +2889,13 @@
   refreshTitleMeta();
   els.btnStatsTitle?.addEventListener("click", openStatsFromTitle);
   els.btnAccountTitle?.addEventListener("click", openAccountFromTitle);
+  // Click active loadout chips → how-to popup (freezes until dismissed)
+  els.powerBar?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-help-key]");
+    if (!btn) return;
+    e.preventDefault();
+    openItemHelp(btn.getAttribute("data-help-key"));
+  });
   // Title hidden until welcome resolves
   if (els.title) els.title.hidden = true;
   wireAccountUi();
