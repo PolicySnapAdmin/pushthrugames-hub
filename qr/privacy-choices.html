@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="index,follow" />
+  <title>Your Privacy Choices · QR</title>
+  <link rel="stylesheet" href="legal.css?v=1" />
+</head>
+<body>
+  <main class="legal">
+    <a class="back" href="./">← Back to QR</a>
+    <h1>Your Privacy Choices</h1>
+    <p class="meta">QR · California “Do Not Sell or Share” &amp; related opt-outs · Updated July 28, 2026</p>
+
+    <div class="card" style="border-color: color-mix(in srgb, #3dd68c 40%, var(--border));">
+      <p style="margin:0;color:var(--text)">
+        <strong>Our stance:</strong> we never sell your data. In our view, opt-out is
+        <strong>always on</strong>.
+        <a href="privacy-stance.html">Read the full promise →</a>
+      </p>
+    </div>
+
+    <p class="lead">
+      This page is the formal “Do Not Sell or Share” control some laws expect.
+      We <strong>do not sell</strong> personal information and
+      <strong>do not share</strong> it for cross-context behavioral advertising in the current web build.
+      You can still record an opt-out preference (default: protected). We honor
+      <strong>Global Privacy Control (GPC)</strong> when your browser sends it.
+    </p>
+
+    <div class="card choices-card">
+      <h2>Do Not Sell or Share My Personal Information</h2>
+      <p class="muted" id="gpc-status">Checking browser GPC signal…</p>
+      <label class="choice-row">
+        <input type="checkbox" id="opt-out-sale-share" checked />
+        <span>
+          <strong>Opt out</strong> of any sale or sharing of my personal information
+          (including for cross-context behavioral advertising).
+          <em style="display:block;margin-top:4px;font-style:normal;color:var(--muted)">
+            Default: on — matches how QR operates.
+          </em>
+        </span>
+      </label>
+      <p class="note">
+        This preference is stored on this device (local storage). If you clear site data, it returns to protected by default.
+        For account deletion, use the contact form or in-game tools when signed in.
+      </p>
+      <div class="choice-actions">
+        <button type="button" class="solid-btn" id="save-privacy-choices">Save preference</button>
+        <span class="choice-saved" id="choice-saved" hidden>Saved</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Other rights</h2>
+      <ul>
+        <li><strong>Delete my account / data</strong> —
+          <a href="contact.html">contact form</a> (topic: Privacy / data deletion)</li>
+        <li><strong>Access or correct data</strong> — contact form with details of your request</li>
+        <li><strong>Cookie / storage info</strong> — <a href="cookies.html">Cookie Notice</a></li>
+        <li><strong>Full policy</strong> — <a href="privacy.html">Privacy Policy</a></li>
+      </ul>
+    </div>
+
+    <p class="footer-links">
+      <a href="privacy.html">Privacy</a> ·
+      <a href="terms.html">Terms</a> ·
+      <a href="cookies.html">Cookies</a> ·
+      <a href="./">Play</a>
+    </p>
+  </main>
+  <script src="legal-consent.js?v=1" defer></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.QRPrivacy) window.QRPrivacy.mountChoicesPage();
+    });
+  </script>
+</body>
+</html>

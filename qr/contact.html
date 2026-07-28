@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="index,follow" />
+  <title>Contact · QR</title>
+  <link rel="stylesheet" href="legal.css?v=1" />
+  <style>
+    .stack { display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
+    .stack label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+    .stack input, .stack select, .stack textarea {
+      font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: #0c0c12; color: var(--text);
+    }
+    .stack textarea { min-height: 120px; resize: vertical; }
+    #contact-status { font-size: 0.9rem; margin-top: 8px; }
+    #contact-status.ok { color: var(--ok); }
+    #contact-status.err { color: #ff6b8a; }
+  </style>
+</head>
+<body>
+  <main class="legal">
+    <a class="back" href="./">← Back to QR</a>
+    <h1>Contact / Support</h1>
+    <p class="meta">QR · Privacy requests, bugs, and general questions</p>
+
+    <p class="lead">
+      For privacy / data deletion, choose that topic so we can prioritize it.
+      Desktop browser is supported; mobile is not yet supported.
+    </p>
+
+    <form class="stack card" id="qr-contact-form">
+      <label>Name
+        <input type="text" name="name" required maxlength="80" autocomplete="name" />
+      </label>
+      <label>Email
+        <input type="email" name="email" required maxlength="120" autocomplete="email" />
+      </label>
+      <label>Topic
+        <select name="topic" required>
+          <option value="Privacy / data deletion">Privacy / data deletion</option>
+          <option value="Bug / gameplay">Bug / gameplay</option>
+          <option value="Account help">Account help</option>
+          <option value="Other">Other</option>
+        </select>
+      </label>
+      <label>Player code (optional)
+        <input type="text" name="player_code" maxlength="16" placeholder="If you know it" />
+      </label>
+      <label>Message
+        <textarea name="message" required maxlength="4000" placeholder="How can we help?"></textarea>
+      </label>
+      <button type="submit" class="solid-btn" id="contact-submit">Send</button>
+      <p id="contact-status" hidden></p>
+    </form>
+
+    <p class="footer-links">
+      <a href="privacy.html">Privacy</a> ·
+      <a href="terms.html">Terms</a> ·
+      <a href="privacy-choices.html">Privacy Choices</a> ·
+      <a href="./">Play</a>
+    </p>
+  </main>
+  <script src="legal-consent.js?v=1" defer></script>
+  <script>
+    (function () {
+      const SUPPORT_EMAIL = atob("Y2FsdmluLm1vbmV5QGdtYWlsLmNvbQ==");
+      const form = document.getElementById("qr-contact-form");
+      const status = document.getElementById("contact-status");
+      const btn = document.getElementById("contact-submit");
+      function setStatus(msg, kind) {
+        status.hidden = !msg;
+        status.textContent = msg || "";
+        status.className = kind || "";
+      }
+      form?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+        const name = String(fd.get("name") || "").trim();
+        const email = String(fd.get("email") || "").trim();
+        const topic = String(fd.get("topic") || "").trim();
+        const message = String(fd.get("message") || "").trim();
+        const player_code = String(fd.get("player_code") || "").trim();
+        if (!name || !email || !message) {
+          setStatus("Please fill required fields.", "err");
+          return;
+        }
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "Sending…";
+        }
+        setStatus("Sending…", "");
+        try {
+          const res = await fetch("https://formsubmit.co/ajax/" + encodeURIComponent(SUPPORT_EMAIL), {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              name,
+              email,
+              topic,
+              message,
+              player_code: player_code || "(not provided)",
+              _subject: ["[QR]", topic, name].join(" · "),
+              _template: "table",
+              _captcha: "false",
+              _replyto: email,
+              source: "qr/contact.html",
+              site: "https://www.pushthrugames.com/qr/",
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.message || data.error || "Send failed");
+          form.reset();
+          setStatus("Sent. We’ll reply by email when we can.", "ok");
+        } catch (err) {
+          setStatus(err.message || "Send failed", "err");
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = "Send";
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

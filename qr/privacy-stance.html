@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="index,follow" />
+  <meta name="description" content="QR privacy stance: we never sell your data. Opt-out is always on." />
+  <title>Our Privacy Stance · QR</title>
+  <link rel="stylesheet" href="legal.css?v=1" />
+  <style>
+    .stance-hero {
+      margin: 20px 0 28px;
+      padding: 22px 20px;
+      border-radius: 16px;
+      border: 1px solid color-mix(in srgb, #3dd68c 35%, var(--border));
+      background:
+        radial-gradient(500px 160px at 10% 0%, color-mix(in srgb, #3dd68c 14%, transparent), transparent 70%),
+        var(--card);
+    }
+    .stance-hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.5rem, 4vw, 1.9rem);
+      letter-spacing: -0.02em;
+    }
+    .stance-pill {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #0a1a12;
+      background: #3dd68c;
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+    }
+    .stance-list {
+      list-style: none;
+      padding: 0;
+      margin: 18px 0 0;
+    }
+    .stance-list li {
+      position: relative;
+      padding: 12px 14px 12px 40px;
+      margin: 0 0 8px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--bg) 50%, transparent);
+      color: var(--muted);
+    }
+    .stance-list li::before {
+      content: "✓";
+      position: absolute;
+      left: 14px;
+      top: 12px;
+      color: #3dd68c;
+      font-weight: 800;
+    }
+    .stance-list strong { color: var(--text); }
+  </style>
+</head>
+<body>
+  <main class="legal">
+    <a class="back" href="./">← Back to QR</a>
+
+    <article class="stance-hero" id="stance">
+      <span class="stance-pill">Our promise</span>
+      <h1>We never sell your data.</h1>
+      <p class="lead" style="margin:0">
+        QR is a game — not a data business. We do not sell personal information to advertisers or brokers.
+        In our view, opt-out of sale is <strong>always on</strong>.
+      </p>
+    </article>
+
+    <ul class="stance-list">
+      <li><strong>No sale of personal information</strong> — we don’t run ads that sell your profile.</li>
+      <li><strong>No cross-context behavioral ad “share”</strong> in the current web build.</li>
+      <li><strong>Essential storage only</strong> — progress, sign-in, and preferences — not ad trackers.</li>
+      <li><strong>GPC honored</strong> — Global Privacy Control is treated as opt-out of sale/share.</li>
+      <li><strong>Separate from Push Thru’s cloud</strong> — QR uses its own backend tables/project.</li>
+    </ul>
+
+    <p class="footer-links" style="margin-top:28px">
+      <a href="privacy.html">Full Privacy Policy</a> ·
+      <a href="privacy-choices.html">Your Privacy Choices</a> ·
+      <a href="terms.html">Terms</a> ·
+      <a href="./">Play QR</a>
+    </p>
+    <p class="meta">QR · https://www.pushthrugames.com/qr/ · Last updated: July 28, 2026</p>
+  </main>
+  <script src="legal-consent.js?v=1" defer></script>
+</body>
+</html>
