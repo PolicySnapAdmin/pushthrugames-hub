@@ -84,6 +84,37 @@ body {
   min-width: 3.5rem;
 }
 
+.platform-note {
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, #ffc857 35%, var(--border));
+  background: color-mix(in srgb, #ffc857 8%, transparent);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.platform-note-block {
+  margin: 10px 0 0;
+  text-align: center;
+}
+
+.platform-ok {
+  color: var(--accent);
+}
+
+.platform-no {
+  color: #ffb86c;
+}
+
+.platform-sep {
+  opacity: 0.5;
+  margin: 0 0.25em;
+}
+
 .power-bar {
   display: flex;
   flex-wrap: wrap;

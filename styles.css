@@ -192,6 +192,27 @@ h1 {
   font-size: 0.8em;
 }
 
+.platform-pill {
+  margin: 0 0 14px !important;
+  max-width: none !important;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, #ffc857 30%, var(--border));
+  background: color-mix(in srgb, #ffc857 7%, transparent);
+  font-size: 0.75rem !important;
+  font-weight: 600;
+  line-height: 1.35 !important;
+  color: var(--muted);
+}
+
+.platform-pill .platform-ok {
+  color: var(--qr);
+}
+
+.platform-pill .platform-no {
+  color: #ffb86c;
+}
+
 /* ── Push Thru identity (coral / pulse) ─────────────────────────────────── */
 .game-pushthru {
   --accent: var(--push);
